@@ -36,7 +36,11 @@
           </view>
 
           <view class="card-actions">
-            <view class="copy-btn" @tap="copyDish(d)">复制这道菜</view>
+            <view class="act-btn" :class="{ done: addedNames.includes(d.name) }" @tap="addToMenu(d)">
+              {{ addedNames.includes(d.name) ? '已在菜单' : '加入菜单' }}
+            </view>
+            <view class="act-btn order" @tap="addToOrder(d)">点这道菜</view>
+            <view class="copy-btn" @tap="copyDish(d)">复制</view>
           </view>
         </view>
 
@@ -52,12 +56,19 @@
 <script setup>
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { listFridge, listDishes } from '../../utils/api'
+import { listFridge, listDishes, listCategories, addDish, findDishByName, setOrderItem } from '../../utils/api'
+import { serverDate } from '../../utils/cloud'
+import { classifyDish } from '../../utils/category-rules'
+import { ROLE, DISH_STATUS } from '../../utils/constants'
+import { useAppStore } from '../../store/app'
 
+const appStore = useAppStore()
 const fridgeItems = ref([])
 const dishList = ref([])
+const categories = ref([])
 const dishes = ref([])
 const excludeNames = ref([])
+const addedNames = ref([])
 const loading = ref(false)
 const errorMsg = ref('')
 const fridgeCount = ref(-1)
@@ -77,10 +88,71 @@ function imageOf(d) {
 }
 
 async function loadBase() {
-  const [fridge, all] = await Promise.all([listFridge(), listDishes()])
+  const [fridge, all, cats] = await Promise.all([listFridge(), listDishes(), listCategories()])
   fridgeItems.value = fridge
   dishList.value = all
+  categories.value = cats
   fridgeCount.value = fridge.length
+}
+
+/** 把 AI 推荐的菜整理成厨师大长串说明（用料 + 做法 + 说明） */
+function buildChefNote(d) {
+  const lines = []
+  if (d.ingredients && d.ingredients.length) {
+    lines.push('【用料】')
+    d.ingredients.forEach((ing) => lines.push(`- ${ing.name}${ing.amount ? ' ' + ing.amount : ''}`))
+  }
+  if (d.steps && d.steps.length) {
+    lines.push('【做法】')
+    d.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`))
+  }
+  if (d.note) lines.push(`【说明】${d.note}`)
+  return lines.join('\n')
+}
+
+/** 确保这道菜在菜单里（存在则复用，不存在则创建），返回 { dish, existed } */
+async function ensureDishInMenu(d) {
+  const name = String(d.name || '').trim()
+  if (!name) throw new Error('菜名为空')
+  const exist = await findDishByName(name)
+  if (exist) return { dish: exist, existed: true }
+  const chefNote = buildChefNote(d)
+  const res = await addDish({
+    name,
+    categoryId: classifyDish(name, categories.value),
+    image: '',
+    chefNote,
+    customerNote: '',
+    status: DISH_STATUS.READY,
+    createdByRole: ROLE.CHEF,
+    searchText: (name + ' ' + chefNote).slice(0, 2000),
+    createTime: serverDate(),
+    updateTime: serverDate()
+  })
+  return { dish: { _id: res._id, name }, existed: false }
+}
+
+async function addToMenu(d) {
+  try {
+    const { existed } = await ensureDishInMenu(d)
+    if (!addedNames.value.includes(d.name)) addedNames.value.push(d.name)
+    uni.showToast({ title: existed ? '这道菜已在菜单里' : '已加入菜单', icon: existed ? 'none' : 'success' })
+  } catch (e) {
+    console.error(e)
+    uni.showToast({ title: '加入失败', icon: 'none' })
+  }
+}
+
+async function addToOrder(d) {
+  try {
+    const { dish } = await ensureDishInMenu(d)
+    await setOrderItem(dish._id, dish.name, 1, '')
+    appStore.refreshCounts()
+    uni.showToast({ title: '已加入点单', icon: 'success' })
+  } catch (e) {
+    console.error(e)
+    uni.showToast({ title: '加入失败', icon: 'none' })
+  }
 }
 
 async function recommend(isRefresh) {
@@ -294,14 +366,31 @@ onLoad(async () => {
 .card-actions {
   margin-top: 16rpx;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+}
+.act-btn {
+  font-size: 26rpx;
+  color: #fff;
+  background: #07c160;
+  border-radius: 28rpx;
+  padding: 8rpx 28rpx;
+  margin-left: 16rpx;
+}
+.act-btn.order {
+  background: #fa9d3b;
+}
+.act-btn.done {
+  background: #e0e0e0;
+  color: #999;
 }
 .copy-btn {
   font-size: 26rpx;
-  color: #07c160;
-  border: 1rpx solid #07c160;
+  color: #666;
+  border: 1rpx solid #ccc;
   border-radius: 28rpx;
   padding: 8rpx 28rpx;
+  margin-left: 16rpx;
 }
 .bottom-bar {
   position: fixed;

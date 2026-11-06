@@ -86,6 +86,12 @@ export async function getDish(id) {
   return col('dishes').doc(id).get()
 }
 
+/** 按名称精确查找菜品（不存在返回 null） */
+export async function findDishByName(name) {
+  const res = await col('dishes').where({ name }).get()
+  return res.data[0] || null
+}
+
 export async function addDish(data) {
   return col('dishes').add({ data })
 }

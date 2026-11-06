@@ -1,0 +1,21 @@
+{
+  "name": "家庭菜谱",
+  "appid": "",
+  "description": "家庭菜谱管理小程序",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "vueVersion": "3",
+  "locale": "zh-Hans",
+  "mp-weixin": {
+    "appid": "wx6215765e5486f1d2",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true,
+    "lazyCodeLoading": "requiredComponents"
+  }
+}

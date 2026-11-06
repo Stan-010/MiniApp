@@ -48,4 +48,4 @@ export const FRESHNESS_NAMES = {
   fading: '快不新鲜'
 }
 
-export const FRIDGE_UNITS = ['个', '克', '斤', '瓶', '袋', '盒', '把', '根', '块', '只']
+export const FRIDGE_UNITS = ['个', '克', '斤', '瓶', '袋', '盒', '把', '根', '块', '只', '条', '节']

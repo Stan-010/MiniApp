@@ -18,7 +18,10 @@
     </scroll-view>
 
     <view v-if="loading" class="empty">加载中…</view>
-    <view v-else-if="!items.length" class="empty">冰箱还是空的\n点「＋ 新增食材」把食材放进来</view>
+    <view v-else-if="!items.length" class="empty">
+      冰箱还是空的\n点「＋ 新增食材」把食材放进来
+      <view class="seed-btn" @tap="seedDemo">⚡ 一键导入测试食材（土豆、蚝油、羊肉卷…共 18 样）</view>
+    </view>
     <view v-else class="fridge-list">
       <view v-for="f in items" :key="f._id" class="fridge-card" @tap="openEdit(f)">
         <image v-if="f.image" class="fridge-img" :src="f.image" mode="aspectFill" />
@@ -149,6 +152,62 @@ function selectCategory(id) {
 
 function goAi() {
   uni.navigateTo({ url: '/pages/ai-recommend/ai-recommend' })
+}
+
+/** 测试用：一键导入示例食材（冰箱为空时显示） */
+async function seedDemo() {
+  const demoItems = [
+    { name: '土豆', category: '蔬菜', amount: '5', unit: '个', days: 14 },
+    { name: '蚝油', category: '调料', amount: '1', unit: '瓶', days: 180 },
+    { name: '羊肉卷', category: '肉类', amount: '500', unit: '克', days: 7 },
+    { name: '铁棍山药', category: '蔬菜', amount: '3', unit: '根', days: 21 },
+    { name: '菜心', category: '蔬菜', amount: '1', unit: '把', days: 5 },
+    { name: '菠菜', category: '蔬菜', amount: '1', unit: '把', days: 5 },
+    { name: '金针菇', category: '蔬菜', amount: '2', unit: '袋', days: 5 },
+    { name: '包菜', category: '蔬菜', amount: '1', unit: '个', days: 10 },
+    { name: '白菜', category: '蔬菜', amount: '1', unit: '个', days: 14 },
+    { name: '鸡蛋', category: '蛋奶', amount: '10', unit: '个', days: 21 },
+    { name: '藕', category: '蔬菜', amount: '2', unit: '节', days: 10 },
+    { name: '胡萝卜', category: '蔬菜', amount: '3', unit: '根', days: 14 },
+    { name: '南瓜', category: '蔬菜', amount: '1', unit: '个', days: 21 },
+    { name: '糖蒜', category: '其他', amount: '1', unit: '瓶', days: 90 },
+    { name: '鸡排', category: '肉类', amount: '3', unit: '块', days: 7 },
+    { name: '牛肉', category: '肉类', amount: '500', unit: '克', days: 7 },
+    { name: '鱼', category: '肉类', amount: '2', unit: '条', days: 5 },
+    { name: '虾', category: '肉类', amount: '500', unit: '克', days: 3 }
+  ]
+  uni.showModal({
+    title: '导入测试食材',
+    content: `将把 ${demoItems.length} 样食材导入冰箱（土豆、蚝油、羊肉卷、铁棍山药、菜心、菠菜、金针菇、包菜、白菜、鸡蛋、藕、胡萝卜、南瓜、糖蒜、鸡排、牛肉、鱼、虾）？`,
+    confirmColor: '#07c160',
+    success: async (res) => {
+      if (!res.confirm) return
+      uni.showLoading({ title: '导入中' })
+      try {
+        for (const d of demoItems) {
+          const c = categories.value.find((x) => x.name === d.category)
+          await addFridge({
+            name: d.name,
+            categoryId: c ? c._id : '',
+            amount: d.amount,
+            unit: d.unit,
+            freshness: 'fresh',
+            days: d.days,
+            image: '',
+            addTime: serverDate(),
+            updateTime: serverDate()
+          })
+        }
+        uni.hideLoading()
+        uni.showToast({ title: '已导入 ' + demoItems.length + ' 样食材', icon: 'success' })
+        load()
+      } catch (e) {
+        uni.hideLoading()
+        console.error(e)
+        uni.showToast({ title: '导入失败', icon: 'none' })
+      }
+    }
+  })
 }
 
 function openAdd() {
@@ -355,6 +414,15 @@ onShow(load)
   color: #999;
   font-size: 26rpx;
   white-space: pre-line;
+}
+.seed-btn {
+  display: inline-block;
+  margin-top: 40rpx;
+  background: #07c160;
+  color: #fff;
+  font-size: 26rpx;
+  border-radius: 32rpx;
+  padding: 14rpx 36rpx;
 }
 .fridge-card {
   display: flex;

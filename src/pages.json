@@ -35,6 +35,10 @@
     {
       "path": "pages/favorites/favorites",
       "style": { "navigationBarTitleText": "我的收藏" }
+    },
+    {
+      "path": "pages/ai-recommend/ai-recommend",
+      "style": { "navigationBarTitleText": "AI 推荐" }
     }
   ],
   "globalStyle": {

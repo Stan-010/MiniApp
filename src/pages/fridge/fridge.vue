@@ -1,6 +1,7 @@
 <template>
   <view class="page">
     <view class="top-actions">
+      <view class="ai-btn" @tap="goAi">✨ AI 推荐</view>
       <view class="add-btn2" @tap="openAdd">＋ 新增食材</view>
       <view class="clean-btn" @tap="cleanExpired">清理过期</view>
     </view>
@@ -144,6 +145,10 @@ async function loadItems() {
 function selectCategory(id) {
   currentCategory.value = id
   loadItems().catch((e) => console.error(e))
+}
+
+function goAi() {
+  uni.navigateTo({ url: '/pages/ai-recommend/ai-recommend' })
 }
 
 function openAdd() {
@@ -309,6 +314,14 @@ onShow(load)
   font-size: 28rpx;
   border-radius: 32rpx;
   padding: 12rpx 32rpx;
+  margin-left: 16rpx;
+}
+.ai-btn {
+  background: #fa9d3b;
+  color: #fff;
+  font-size: 28rpx;
+  border-radius: 32rpx;
+  padding: 12rpx 28rpx;
 }
 .clean-btn {
   margin-left: 20rpx;

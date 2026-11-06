@@ -4,7 +4,7 @@
  * 二期扩展（fridge 等）在文件底部追加模块，保持按集合分块
  */
 import { db, getOpenid, serverDate } from './cloud'
-import { DISH_STATUS, ORDER_STATUS, PRESET_CATEGORIES } from './constants'
+import { DISH_STATUS, ORDER_STATUS, PRESET_CATEGORIES, FRIDGE_PRESET_CATEGORIES } from './constants'
 
 const col = (name) => db().collection(name)
 
@@ -205,6 +205,55 @@ export async function listDoneOrders(limit = 10) {
 
 export async function markOrderDone(id) {
   return col('orders').doc(id).update({ data: { status: ORDER_STATUS.DONE, doneTime: serverDate() } })
+}
+
+/* ---------- 冰箱（v0.3） ---------- */
+
+export async function listFridgeCategories() {
+  const res = await col('fridgeCategories').orderBy('sort', 'asc').get()
+  return res.data
+}
+
+/** 冰箱分类集合为空时写入预置分类（幂等） */
+export async function ensurePresetFridgeCategories() {
+  const cnt = await col('fridgeCategories').count()
+  if (cnt.total > 0) return false
+  await Promise.all(
+    FRIDGE_PRESET_CATEGORIES.map((name, i) =>
+      col('fridgeCategories').add({ data: { name, sort: i, isPreset: true, createTime: serverDate() } })
+    )
+  )
+  return true
+}
+
+export async function listFridge(filter = {}) {
+  let query = col('fridge')
+  if (filter.categoryId !== undefined) query = query.where({ categoryId: filter.categoryId })
+  const res = await query.orderBy('addTime', 'desc').get()
+  return res.data
+}
+
+export async function addFridge(data) {
+  return col('fridge').add({ data })
+}
+
+export async function updateFridge(id, data) {
+  return col('fridge').doc(id).update({ data })
+}
+
+export async function removeFridge(id) {
+  return col('fridge').doc(id).remove()
+}
+
+/** 清理已过期食材，返回清理数量 */
+export async function removeExpiredFridge() {
+  const all = await listFridge()
+  const now = Date.now()
+  const expired = all.filter(
+    (f) => f.addTime && f.days && new Date(f.addTime).getTime() + f.days * 86400000 < now
+  )
+  await Promise.all(expired.map((f) => col('fridge').doc(f._id).remove()))
+  return expired.length
 }
 
 /* ---------- 收藏 ---------- */

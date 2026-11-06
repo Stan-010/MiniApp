@@ -31,3 +31,21 @@ export const ORDER_STATUS_NAMES = {
 
 /** 预置分类（首次启动自动写入，可增删） */
 export const PRESET_CATEGORIES = ['荤菜', '素菜', '汤羹', '主食', '凉菜', '饮品']
+
+/* ---------- 冰箱（v0.3） ---------- */
+
+export const FRIDGE_PRESET_CATEGORIES = ['调料', '蔬菜', '肉类', '水果', '蛋奶', '主食', '其他']
+
+export const FRESHNESS = {
+  FRESH: 'fresh',
+  NORMAL: 'normal',
+  FADING: 'fading'
+}
+
+export const FRESHNESS_NAMES = {
+  fresh: '新鲜',
+  normal: '一般',
+  fading: '快不新鲜'
+}
+
+export const FRIDGE_UNITS = ['个', '克', '斤', '瓶', '袋', '盒', '把', '根', '块', '只']

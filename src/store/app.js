@@ -4,16 +4,18 @@ import { getUser, setRole, getDraftOrder, listSubmittedOrders } from '../utils/a
 export const useAppStore = defineStore('app', {
   state: () => ({
     role: '',          // customer / chef
+    groupId: '',       // 所在家庭组 id（空 = 未入组）
     roleLoaded: false,
     draftCount: 0,     // 点单中件数
     orderCount: 0      // 待做订单数
   }),
   actions: {
-    /** 加载当前用户角色（没有则返回 ''，由页面引导选择） */
+    /** 加载当前用户身份与所在组 */
     async loadRole() {
       try {
         const u = await getUser()
         this.role = u ? u.role : ''
+        this.groupId = u ? u.groupId || '' : ''
       } catch (e) {
         console.warn('[store] 角色加载失败', e)
       } finally {

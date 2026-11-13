@@ -133,9 +133,28 @@ function promptRole() {
   })
 }
 
+let groupPrompted = false
+
 async function load() {
   loading.value = true
   try {
+    if (!appStore.roleLoaded) await appStore.loadRole()
+    if (!appStore.role) promptRole()
+    if (!appStore.groupId) {
+      if (!groupPrompted) {
+        groupPrompted = true
+        uni.showModal({
+          title: '还没有加入家庭',
+          content: '先到「我的」页创建家庭，或输入家人给你的邀请码加入',
+          showCancel: false,
+          confirmText: '去设置',
+          success: () => uni.switchTab({ url: '/pages/mine/mine' })
+        })
+      }
+      dishes.value = []
+      categories.value = []
+      return
+    }
     await ensurePresetCategories()
     categories.value = await listCategories()
     await loadDishes()
@@ -148,8 +167,6 @@ async function load() {
       uni.removeTabBarBadge({ index: 1 })
     }
     // #endif
-    if (!appStore.roleLoaded) await appStore.loadRole()
-    if (!appStore.role) promptRole()
   } catch (e) {
     console.error(e)
     uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })

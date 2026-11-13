@@ -133,6 +133,26 @@ function promptRole() {
   })
 }
 
+const TAB_ROUTES = ['pages/index/index', 'pages/orders/orders', 'pages/fridge/fridge', 'pages/mine/mine']
+
+/** 更新订单 tab 角标（纯装饰，非 tab 页或失败时静默忽略） */
+function updateOrderBadge() {
+  // #ifdef MP-WEIXIN
+  try {
+    const pages = getCurrentPages()
+    const current = pages && pages.length ? pages[pages.length - 1] : null
+    if (!current || !TAB_ROUTES.includes(current.route)) return
+    if (appStore.role === ROLE.CHEF && appStore.orderCount > 0) {
+      uni.setTabBarBadge({ index: 1, text: String(appStore.orderCount) })
+    } else {
+      uni.removeTabBarBadge({ index: 1 })
+    }
+  } catch (e) {
+    // 忽略：角标只是提示，不影响功能
+  }
+  // #endif
+}
+
 let groupPrompted = false
 
 async function load() {
@@ -160,13 +180,7 @@ async function load() {
     await loadDishes()
     await loadDraft()
     await appStore.refreshCounts()
-    // #ifdef MP-WEIXIN
-    if (appStore.role === ROLE.CHEF && appStore.orderCount > 0) {
-      uni.setTabBarBadge({ index: 1, text: String(appStore.orderCount) })
-    } else {
-      uni.removeTabBarBadge({ index: 1 })
-    }
-    // #endif
+    updateOrderBadge()
   } catch (e) {
     console.error(e)
     uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })

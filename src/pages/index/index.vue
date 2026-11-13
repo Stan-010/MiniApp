@@ -77,7 +77,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import {
   listCategories, ensurePresetCategories, listDishes, addDish,
   getDraftOrder, setOrderItem
@@ -260,6 +260,11 @@ function goPreview() {
 
 onShow(() => {
   load()
+})
+
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
 })
 </script>
 

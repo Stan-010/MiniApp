@@ -47,6 +47,7 @@
     <view class="about">
       <view>家庭菜谱 v0.4.0</view>
       <view class="small">多家庭组隔离 · 数据存储于微信云开发</view>
+      <view class="small">本机账号尾号：{{ openidTail || '…' }}</view>
     </view>
   </view>
 </template>
@@ -56,11 +57,13 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { ROLE, ROLE_NAMES } from '../../utils/constants'
 import { createGroup, joinGroup, leaveGroup, getGroupInfo, countGroupMembers } from '../../utils/api'
+import { getOpenid } from '../../utils/cloud'
 import { useAppStore } from '../../store/app'
 
 const appStore = useAppStore()
 const groupInfo = ref(null)
 const memberCount = ref(0)
+const openidTail = ref('')
 
 const roleName = computed(() => ROLE_NAMES[appStore.role] || '未设置')
 
@@ -68,6 +71,12 @@ async function load() {
   if (!appStore.roleLoaded) await appStore.loadRole()
   groupInfo.value = await getGroupInfo()
   memberCount.value = await countGroupMembers()
+  try {
+    const oid = await getOpenid()
+    openidTail.value = oid ? oid.slice(-6) : ''
+  } catch (e) {
+    openidTail.value = ''
+  }
 }
 
 function pickRole(cb) {

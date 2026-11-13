@@ -83,7 +83,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import {
   listFridgeCategories, ensurePresetFridgeCategories, listFridge,
   addFridge, updateFridge, removeFridge, removeExpiredFridge
@@ -355,6 +355,11 @@ function cleanExpired() {
 }
 
 onShow(load)
+
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 </script>
 
 <style>

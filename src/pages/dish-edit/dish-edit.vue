@@ -38,7 +38,7 @@
         <textarea
           class="big-textarea"
           v-model="chefNote"
-          placeholder="做法、食材配比、用料…全部写在这里（一长串说明）&#10;例如：&#10;用料：鸡蛋 3 个、西红柿 2 个、盐适量&#10;做法：1. 西红柿切块… 2. 鸡蛋打散… 3. …"
+          :placeholder="notePlaceholder"
         />
       </view>
     </view>
@@ -65,6 +65,8 @@ const imageFileID = ref('')
 const chefNote = ref('')
 const customerNote = ref('')
 const saving = ref(false)
+
+const notePlaceholder = '做法、食材配比、用料…全部写在这里（一长串说明）\n例如：\n用料：鸡蛋 3 个、西红柿 2 个、盐适量\n做法：1. 西红柿切块… 2. 鸡蛋打散… 3. …'
 
 const catNames = computed(() => ['未分类', ...categories.value.map((c) => c.name)])
 

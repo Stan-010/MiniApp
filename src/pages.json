@@ -39,6 +39,10 @@
     {
       "path": "pages/ai-recommend/ai-recommend",
       "style": { "navigationBarTitleText": "AI 推荐" }
+    },
+    {
+      "path": "pages/logs/logs",
+      "style": { "navigationBarTitleText": "运行日志" }
     }
   ],
   "globalStyle": {

@@ -58,6 +58,7 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { listFridge, listDishes, listCategories, addDish, findDishByName, setOrderItem } from '../../utils/api'
 import { serverDate } from '../../utils/cloud'
+import { log } from '../../utils/logger'
 import { classifyDish } from '../../utils/category-rules'
 import { ROLE, DISH_STATUS } from '../../utils/constants'
 import { useAppStore } from '../../store/app'
@@ -178,12 +179,15 @@ async function recommend(isRefresh) {
     if (!r.ok) {
       errorMsg.value = (r.message || 'AI 调用失败') + (r.detail ? '\n' + r.detail : '')
       dishes.value = []
+      log('AI 推荐', '失败: ' + errorMsg.value, 'error')
       return
     }
     dishes.value = (r.dishes || []).slice(0, 10)
+    log('AI 推荐', `${fridgeItems.value.length} 种食材 → ${dishes.value.length} 道菜${isRefresh ? '（换一批）' : ''}`)
   } catch (e) {
     console.error(e)
     errorMsg.value = '调用失败：请确认 ai-chef 云函数已部署\n' + (e.message || '')
+    log('AI 推荐', '异常: ' + (e.message || e), 'error')
   } finally {
     loading.value = false
   }

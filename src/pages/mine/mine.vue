@@ -42,6 +42,10 @@
         <text>我的购物车</text>
         <text class="arrow">›</text>
       </view>
+      <view class="menu-row" @tap="go('/pages/logs/logs')">
+        <text>运行日志</text>
+        <text class="arrow">›</text>
+      </view>
     </view>
 
     <view class="about">

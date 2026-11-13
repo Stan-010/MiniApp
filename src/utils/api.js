@@ -2,11 +2,27 @@
  * 数据层：云数据库集合 CRUD 封装（组隔离 v0.4）
  * 集合：users / groups / categories / dishes / orders / favorites / fridge / fridgeCategories
  * 所有业务数据按 groupId 隔离；写操作强制携带本组 groupId。
+ * 所有写操作统一经 withLog 记录运行日志（logs 集合 + Console）。
  */
 import { db, getOpenid, serverDate } from './cloud'
+import { log } from './logger'
 import { DISH_STATUS, ORDER_STATUS, PRESET_CATEGORIES, FRIDGE_PRESET_CATEGORIES } from './constants'
 
 const col = (name) => db().collection(name)
+
+/** 包装写操作：成功/失败都记日志（detail 可为函数，在成功后求值） */
+async function withLog(action, fn, detail = '') {
+  try {
+    const r = await fn()
+    const d = typeof detail === 'function' ? detail(r) : detail
+    log(action, d || '成功')
+    return r
+  } catch (e) {
+    const d = typeof detail === 'function' ? '' : detail
+    log(action, (d ? d + ' ' : '') + '失败: ' + ((e && e.message) || e), 'error')
+    throw e
+  }
+}
 
 /* ---------- 用户 / 组 ---------- */
 
@@ -16,15 +32,17 @@ export async function getUser() {
   return res.data[0] || null
 }
 
-export async function setRole(role) {
-  const openid = await getOpenid()
-  const exist = await col('users').where({ openid }).get()
-  if (exist.data.length) {
-    await col('users').doc(exist.data[0]._id).update({ data: { role, updateTime: serverDate() } })
-  } else {
-    await col('users').add({ data: { openid, role, groupId: '', createTime: serverDate() } })
-  }
-  return role
+export function setRole(role) {
+  return withLog('切换身份', async () => {
+    const openid = await getOpenid()
+    const exist = await col('users').where({ openid }).get()
+    if (exist.data.length) {
+      await col('users').doc(exist.data[0]._id).update({ data: { role, updateTime: serverDate() } })
+    } else {
+      await col('users').add({ data: { openid, role, groupId: '', createTime: serverDate() } })
+    }
+    return role
+  }, role)
 }
 
 /** 当前用户所在组 id；未入组返回 '' */
@@ -58,43 +76,49 @@ async function migrateAllToGroup(groupId) {
 }
 
 /** 创建家庭组（创建者选身份，每组可多个厨师） */
-export async function createGroup(name, role) {
-  const openid = await getOpenid()
-  let inviteCode = ''
-  for (let i = 0; i < 10; i++) {
-    const code = String(Math.floor(100000 + Math.random() * 900000))
-    const dup = await col('groups').where({ inviteCode: code }).get()
-    if (!dup.data.length) {
-      inviteCode = code
-      break
+export function createGroup(name, role) {
+  return withLog('创建家庭', async () => {
+    const openid = await getOpenid()
+    let inviteCode = ''
+    for (let i = 0; i < 10; i++) {
+      const code = String(Math.floor(100000 + Math.random() * 900000))
+      const dup = await col('groups').where({ inviteCode: code }).get()
+      if (!dup.data.length) {
+        inviteCode = code
+        break
+      }
     }
-  }
-  if (!inviteCode) throw new Error('邀请码生成失败，请重试')
-  const res = await col('groups').add({
-    data: { name: name.trim() || '我的家庭', inviteCode, createTime: serverDate() }
-  })
-  const groupId = res._id
-  await setUserGroup(openid, groupId, role)
-  await migrateAllToGroup(groupId)
-  return { groupId, inviteCode, name }
+    if (!inviteCode) throw new Error('邀请码生成失败，请重试')
+    const res = await col('groups').add({
+      data: { name: name.trim() || '我的家庭', inviteCode, createTime: serverDate() }
+    })
+    const groupId = res._id
+    await setUserGroup(openid, groupId, role)
+    await migrateAllToGroup(groupId)
+    return { groupId, inviteCode, name }
+  }, `${name} / ${role}`)
 }
 
 /** 通过邀请码加入家庭组 */
-export async function joinGroup(inviteCode, role) {
-  const openid = await getOpenid()
-  const res = await col('groups').where({ inviteCode: String(inviteCode).trim() }).get()
-  if (!res.data.length) throw new Error('邀请码不存在')
-  await setUserGroup(openid, res.data[0]._id, role)
-  return res.data[0]
+export function joinGroup(inviteCode, role) {
+  return withLog('加入家庭', async () => {
+    const openid = await getOpenid()
+    const res = await col('groups').where({ inviteCode: String(inviteCode).trim() }).get()
+    if (!res.data.length) throw new Error('邀请码不存在')
+    await setUserGroup(openid, res.data[0]._id, role)
+    return res.data[0]
+  }, `邀请码 ${inviteCode} / ${role}`)
 }
 
 /** 退出当前家庭组（数据保留在原组） */
-export async function leaveGroup() {
-  const openid = await getOpenid()
-  const exist = await col('users').where({ openid }).get()
-  if (exist.data.length) {
-    await col('users').doc(exist.data[0]._id).update({ data: { groupId: '', updateTime: serverDate() } })
-  }
+export function leaveGroup() {
+  return withLog('退出家庭', async () => {
+    const openid = await getOpenid()
+    const exist = await col('users').where({ openid }).get()
+    if (exist.data.length) {
+      await col('users').doc(exist.data[0]._id).update({ data: { groupId: '', updateTime: serverDate() } })
+    }
+  })
 }
 
 /** 当前组信息（名称、邀请码）；未入组返回 null */
@@ -139,18 +163,22 @@ export async function ensurePresetCategories() {
   return true
 }
 
-export async function addCategory(name) {
-  const groupId = await requireGroup()
-  return col('categories').add({ data: { name, groupId, sort: 0, createTime: serverDate() } })
+export function addCategory(name) {
+  return withLog('新增分类', async () => {
+    const groupId = await requireGroup()
+    return col('categories').add({ data: { name, groupId, sort: 0, createTime: serverDate() } })
+  }, name)
 }
 
 export async function updateCategory(id, data) {
   return col('categories').doc(id).update({ data })
 }
 
-export async function removeCategory(id) {
-  await col('dishes').where({ categoryId: id }).update({ data: { categoryId: '' } })
-  return col('categories').doc(id).remove()
+export function removeCategory(id) {
+  return withLog('删除分类', async () => {
+    await col('dishes').where({ categoryId: id }).update({ data: { categoryId: '' } })
+    return col('categories').doc(id).remove()
+  }, id)
 }
 
 /* ---------- 菜品 ---------- */
@@ -191,17 +219,23 @@ export async function findDishByName(name) {
   return res.data[0] || null
 }
 
-export async function addDish(data) {
-  const groupId = await requireGroup()
-  return col('dishes').add({ data: { ...data, groupId } })
+export function addDish(data) {
+  return withLog('新增菜品', async () => {
+    const groupId = await requireGroup()
+    return col('dishes').add({ data: { ...data, groupId } })
+  }, (data && data.name) || '')
 }
 
-export async function updateDish(id, data) {
-  return col('dishes').doc(id).update({ data })
+export function updateDish(id, data) {
+  return withLog('编辑菜品', async () => {
+    return col('dishes').doc(id).update({ data })
+  }, (data && data.name) || id)
 }
 
-export async function removeDish(id) {
-  return col('dishes').doc(id).remove()
+export function removeDish(id) {
+  return withLog('删除菜品', async () => {
+    return col('dishes').doc(id).remove()
+  }, id)
 }
 
 /** 待厨师完善的菜品列表 */
@@ -239,50 +273,60 @@ export async function getDraftOrder() {
 }
 
 /** 设置点单中某道菜的数量（count<=0 即移除）；新增时写入 note 和 image，更新时保留已有值 */
-export async function setOrderItem(dishId, dishName, count, note = '', image = '') {
-  const groupId = await requireGroup()
-  const openid = await getOpenid()
-  const order = await ensureDraft(openid, groupId)
-  const items = [...(order.items || [])]
-  const idx = items.findIndex((i) => i.dishId === dishId)
-  if (count <= 0) {
-    if (idx >= 0) items.splice(idx, 1)
-  } else if (idx >= 0) {
-    items[idx] = { ...items[idx], count, image: image || items[idx].image || '' }
-  } else {
-    items.push({ dishId, dishName, count, note, image })
-  }
-  return col('orders').doc(order._id).update({ data: { items, updateTime: serverDate() } })
+export function setOrderItem(dishId, dishName, count, note = '', image = '') {
+  return withLog('点单增减', async () => {
+    const groupId = await requireGroup()
+    const openid = await getOpenid()
+    const order = await ensureDraft(openid, groupId)
+    const items = [...(order.items || [])]
+    const idx = items.findIndex((i) => i.dishId === dishId)
+    if (count <= 0) {
+      if (idx >= 0) items.splice(idx, 1)
+    } else if (idx >= 0) {
+      items[idx] = { ...items[idx], count, image: image || items[idx].image || '' }
+    } else {
+      items.push({ dishId, dishName, count, note, image })
+    }
+    return col('orders').doc(order._id).update({ data: { items, updateTime: serverDate() } })
+  }, `${dishName} x${count}`)
 }
 
 /** 更新点单中某道菜的备注 */
-export async function updateOrderItemNote(dishId, note) {
-  const groupId = await requireGroup()
-  const openid = await getOpenid()
-  const order = await ensureDraft(openid, groupId)
-  const items = (order.items || []).map((i) => (i.dishId === dishId ? { ...i, note } : i))
-  return col('orders').doc(order._id).update({ data: { items, updateTime: serverDate() } })
+export function updateOrderItemNote(dishId, note) {
+  return withLog('修改点单备注', async () => {
+    const groupId = await requireGroup()
+    const openid = await getOpenid()
+    const order = await ensureDraft(openid, groupId)
+    const items = (order.items || []).map((i) => (i.dishId === dishId ? { ...i, note } : i))
+    return col('orders').doc(order._id).update({ data: { items, updateTime: serverDate() } })
+  }, String(note).slice(0, 50))
 }
 
-export async function submitOrder() {
-  const groupId = await requireGroup()
-  const openid = await getOpenid()
-  const res = await col('orders').where({ openid, groupId, status: ORDER_STATUS.DRAFT }).get()
-  const order = res.data[0] || null
-  if (!order || !(order.items || []).length) throw new Error('还没有点菜')
-  return col('orders').doc(order._id).update({
-    data: { status: ORDER_STATUS.SUBMITTED, submitTime: serverDate(), updateTime: serverDate() }
-  })
+export function submitOrder() {
+  let count = 0
+  return withLog('下单', async () => {
+    const groupId = await requireGroup()
+    const openid = await getOpenid()
+    const res = await col('orders').where({ openid, groupId, status: ORDER_STATUS.DRAFT }).get()
+    const order = res.data[0] || null
+    if (!order || !(order.items || []).length) throw new Error('还没有点菜')
+    count = (order.items || []).length
+    return col('orders').doc(order._id).update({
+      data: { status: ORDER_STATUS.SUBMITTED, submitTime: serverDate(), updateTime: serverDate() }
+    })
+  }, () => count + ' 道菜')
 }
 
 /** 一键清空购物车（清空当前草稿订单的条目） */
-export async function clearDraftOrder() {
-  const groupId = await getGroupId()
-  if (!groupId) return
-  const openid = await getOpenid()
-  const res = await col('orders').where({ openid, groupId, status: ORDER_STATUS.DRAFT }).get()
-  if (!res.data.length) return
-  await col('orders').doc(res.data[0]._id).update({ data: { items: [], updateTime: serverDate() } })
+export function clearDraftOrder() {
+  return withLog('清空购物车', async () => {
+    const groupId = await getGroupId()
+    if (!groupId) return
+    const openid = await getOpenid()
+    const res = await col('orders').where({ openid, groupId, status: ORDER_STATUS.DRAFT }).get()
+    if (!res.data.length) return
+    await col('orders').doc(res.data[0]._id).update({ data: { items: [], updateTime: serverDate() } })
+  })
 }
 
 export async function listSubmittedOrders() {
@@ -323,8 +367,10 @@ export async function listDoneOrders(limit = 10) {
   return res.data
 }
 
-export async function markOrderDone(id) {
-  return col('orders').doc(id).update({ data: { status: ORDER_STATUS.DONE, doneTime: serverDate() } })
+export function markOrderDone(id) {
+  return withLog('完成订单', async () => {
+    return col('orders').doc(id).update({ data: { status: ORDER_STATUS.DONE, doneTime: serverDate() } })
+  }, id)
 }
 
 /* ---------- 冰箱（v0.3） ---------- */
@@ -358,28 +404,36 @@ export async function listFridge(filter = {}) {
   return res.data
 }
 
-export async function addFridge(data) {
-  const groupId = await requireGroup()
-  return col('fridge').add({ data: { ...data, groupId } })
+export function addFridge(data) {
+  return withLog('冰箱入库', async () => {
+    const groupId = await requireGroup()
+    return col('fridge').add({ data: { ...data, groupId } })
+  }, `${(data && data.name) || ''} ${(data && data.amount) || ''}${(data && data.unit) || ''}`)
 }
 
-export async function updateFridge(id, data) {
-  return col('fridge').doc(id).update({ data })
+export function updateFridge(id, data) {
+  return withLog('冰箱编辑', async () => {
+    return col('fridge').doc(id).update({ data })
+  }, (data && data.name) || id)
 }
 
-export async function removeFridge(id) {
-  return col('fridge').doc(id).remove()
+export function removeFridge(id) {
+  return withLog('冰箱删除', async () => {
+    return col('fridge').doc(id).remove()
+  }, id)
 }
 
 /** 清理本组已过期食材，返回清理数量 */
-export async function removeExpiredFridge() {
-  const all = await listFridge()
-  const now = Date.now()
-  const expired = all.filter(
-    (f) => f.addTime && f.days && new Date(f.addTime).getTime() + f.days * 86400000 < now
-  )
-  await Promise.all(expired.map((f) => col('fridge').doc(f._id).remove()))
-  return expired.length
+export function removeExpiredFridge() {
+  return withLog('清理过期食材', async () => {
+    const all = await listFridge()
+    const now = Date.now()
+    const expired = all.filter(
+      (f) => f.addTime && f.days && new Date(f.addTime).getTime() + f.days * 86400000 < now
+    )
+    await Promise.all(expired.map((f) => col('fridge').doc(f._id).remove()))
+    return expired.length
+  })
 }
 
 /* ---------- 收藏 ---------- */
@@ -392,16 +446,20 @@ export async function listFavoriteDishIds() {
   return res.data.map((f) => f.dishId)
 }
 
-export async function addFavorite(dishId) {
-  const groupId = await requireGroup()
-  const openid = await getOpenid()
-  return col('favorites').add({ data: { openid, groupId, dishId, createTime: serverDate() } })
+export function addFavorite(dishId) {
+  return withLog('收藏菜品', async () => {
+    const groupId = await requireGroup()
+    const openid = await getOpenid()
+    return col('favorites').add({ data: { openid, groupId, dishId, createTime: serverDate() } })
+  }, dishId)
 }
 
-export async function removeFavoriteByDish(dishId) {
-  const groupId = await getGroupId()
-  if (!groupId) return
-  const openid = await getOpenid()
-  const res = await col('favorites').where({ openid, groupId, dishId }).get()
-  await Promise.all(res.data.map((f) => col('favorites').doc(f._id).remove()))
+export function removeFavoriteByDish(dishId) {
+  return withLog('取消收藏', async () => {
+    const groupId = await getGroupId()
+    if (!groupId) return
+    const openid = await getOpenid()
+    const res = await col('favorites').where({ openid, groupId, dishId }).get()
+    await Promise.all(res.data.map((f) => col('favorites').doc(f._id).remove()))
+  }, dishId)
 }

@@ -10,6 +10,42 @@ import { DISH_STATUS, ORDER_STATUS, PRESET_CATEGORIES, FRIDGE_PRESET_CATEGORIES 
 
 const col = (name) => db().collection(name)
 
+/* ---------- AI 每日次数（aiUsage 集合，按 openid+日期 计数） ---------- */
+
+function todayStr() {
+  const t = new Date()
+  const p = (n) => (n < 10 ? '0' + n : '' + n)
+  return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`
+}
+
+export async function getAiDailyCount() {
+  const openid = await getOpenid()
+  try {
+    const res = await col('aiUsage').doc(openid + '_' + todayStr()).get()
+    return (res.data && res.data.count) || 0
+  } catch (e) {
+    return 0
+  }
+}
+
+export async function incAiDailyCount() {
+  const openid = await getOpenid()
+  const key = openid + '_' + todayStr()
+  try {
+    await col('aiUsage').doc(key).update({ data: { count: db().command.inc(1) } })
+  } catch (e) {
+    try {
+      await col('aiUsage').add({ data: { _id: key, count: 1, date: todayStr(), createTime: serverDate() } })
+    } catch (e2) {
+      try {
+        await col('aiUsage').doc(key).update({ data: { count: db().command.inc(1) } })
+      } catch (e3) {
+        // 忽略：计数失败不阻断推荐
+      }
+    }
+  }
+}
+
 /** 包装写操作：成功/失败都记日志（detail 可为函数，在成功后求值） */
 async function withLog(action, fn, detail = '') {
   try {

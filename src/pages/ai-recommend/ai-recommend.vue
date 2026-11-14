@@ -3,7 +3,7 @@
     <view v-if="fridgeCount === 0 && !loading" class="empty">冰箱里还没有食材\n先去「冰箱」tab 加一些吧</view>
     <template v-else>
       <view class="head-bar">
-        <text class="head-text">冰箱现有 {{ fridgeCount }} 种食材 · AI 推荐</text>
+        <text class="head-text">冰箱现有 {{ fridgeCount }} 种食材 · AI 推荐 · 今日剩余 {{ remaining }} 次</text>
         <view class="refresh-btn" @tap="recommend(true)">🔄 换一批</view>
       </view>
 
@@ -56,11 +56,14 @@
 <script setup>
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { listFridge, listDishes, listCategories, addDish, findDishByName, setOrderItem } from '../../utils/api'
+import {
+  listFridge, listDishes, listCategories, addDish, findDishByName, setOrderItem,
+  getAiDailyCount, incAiDailyCount
+} from '../../utils/api'
 import { serverDate } from '../../utils/cloud'
 import { log } from '../../utils/logger'
 import { classifyDish } from '../../utils/category-rules'
-import { ROLE, DISH_STATUS } from '../../utils/constants'
+import { ROLE, DISH_STATUS, AI_DAILY_LIMIT } from '../../utils/constants'
 import { useAppStore } from '../../store/app'
 
 const appStore = useAppStore()
@@ -73,6 +76,7 @@ const addedNames = ref([])
 const loading = ref(false)
 const errorMsg = ref('')
 const fridgeCount = ref(-1)
+const remaining = ref(AI_DAILY_LIMIT)
 
 function norm(s) {
   return String(s || '').replace(/\s+/g, '').toLowerCase()
@@ -89,11 +93,14 @@ function imageOf(d) {
 }
 
 async function loadBase() {
-  const [fridge, all, cats] = await Promise.all([listFridge(), listDishes(), listCategories()])
+  const [fridge, all, cats, used] = await Promise.all([
+    listFridge(), listDishes(), listCategories(), getAiDailyCount()
+  ])
   fridgeItems.value = fridge
   dishList.value = all
   categories.value = cats
   fridgeCount.value = fridge.length
+  remaining.value = Math.max(0, AI_DAILY_LIMIT - used)
 }
 
 /** 把 AI 推荐的菜整理成厨师大长串说明（用料 + 做法 + 说明） */
@@ -161,6 +168,10 @@ async function recommend(isRefresh) {
     errorMsg.value = '冰箱里还没有食材，先去「冰箱」tab 加一些'
     return
   }
+  if (remaining.value <= 0) {
+    errorMsg.value = `今日 AI 推荐次数已用完（${AI_DAILY_LIMIT}/${AI_DAILY_LIMIT}），明天再来`
+    return
+  }
   if (isRefresh && dishes.value.length) {
     const names = dishes.value.map((d) => d.name)
     excludeNames.value = excludeNames.value.concat(names).slice(-60)
@@ -183,6 +194,8 @@ async function recommend(isRefresh) {
       return
     }
     dishes.value = (r.dishes || []).slice(0, 10)
+    await incAiDailyCount()
+    remaining.value = Math.max(0, remaining.value - 1)
     log('AI 推荐', `${fridgeItems.value.length} 种食材 → ${dishes.value.length} 道菜${isRefresh ? '（换一批）' : ''}`)
   } catch (e) {
     console.error(e)

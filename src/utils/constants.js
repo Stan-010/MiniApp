@@ -49,3 +49,6 @@ export const FRESHNESS_NAMES = {
 }
 
 export const FRIDGE_UNITS = ['个', '克', '斤', '瓶', '袋', '盒', '把', '根', '块', '只', '条', '节']
+
+/** AI 推荐每日次数上限（按人计数，成功推荐才扣） */
+export const AI_DAILY_LIMIT = 5

@@ -60,11 +60,19 @@
     <view v-if="showQuickAdd" class="mask" @tap="showQuickAdd = false">
       <view class="sheet" @tap.stop>
         <view class="sheet-title">新增菜品</view>
-        <input class="sheet-input" v-model="quickName" placeholder="菜名（必填）" />
+        <input
+          class="sheet-input"
+          v-model="quickName"
+          placeholder="菜名（必填）"
+          :adjust-position="false"
+          :cursor-spacing="100"
+        />
         <textarea
           class="sheet-textarea"
           v-model="quickNote"
           placeholder="想吃备注：口味、忌口等（可选，如：少放辣）"
+          :adjust-position="false"
+          :cursor-spacing="100"
         />
         <view class="sheet-actions">
           <view class="sheet-btn cancel" @tap="showQuickAdd = false">取消</view>

@@ -24,7 +24,7 @@
     </view>
     <view v-else class="fridge-list">
       <view v-for="f in items" :key="f._id" class="fridge-card" @tap="openEdit(f)">
-        <image v-if="f.image" class="fridge-img" :src="f.image" mode="aspectFill" />
+        <image v-if="f.image && !f.imgError" class="fridge-img" :src="f.image" mode="aspectFill" @error="onImgError(f)" />
         <view v-else class="fridge-img placeholder">{{ f.name.slice(0, 1) }}</view>
         <view class="fridge-info">
           <view class="fridge-name-row">
@@ -43,7 +43,13 @@
       <view class="sheet" @tap.stop>
         <view class="sheet-title">{{ editingId ? '编辑食材' : '新增食材' }}</view>
 
-        <input class="sheet-input" v-model="form.name" placeholder="食材名称（必填）" />
+        <input
+          class="sheet-input"
+          v-model="form.name"
+          placeholder="食材名称（必填）"
+          :adjust-position="false"
+          :cursor-spacing="100"
+        />
 
         <view class="form-row">
           <picker class="picker" mode="selector" :range="catNames" :value="form.categoryIndex" @change="onCatChange">
@@ -52,7 +58,14 @@
         </view>
 
         <view class="form-row">
-          <input class="half-input" v-model="form.amount" placeholder="数量" type="digit" />
+          <input
+            class="half-input"
+            v-model="form.amount"
+            placeholder="数量"
+            type="digit"
+            :adjust-position="false"
+            :cursor-spacing="100"
+          />
           <picker class="picker half" mode="selector" :range="FRIDGE_UNITS" :value="form.unitIndex" @change="onUnitChange">
             <view class="picker-view">单位：{{ FRIDGE_UNITS[form.unitIndex] }}</view>
           </picker>
@@ -62,7 +75,14 @@
           <picker class="picker" mode="selector" :range="freshnessNames" :value="form.freshnessIndex" @change="onFreshChange">
             <view class="picker-view">新鲜程度：{{ freshnessNames[form.freshnessIndex] }}</view>
           </picker>
-          <input class="half-input" v-model="form.days" placeholder="存放天数" type="number" />
+          <input
+            class="half-input"
+            v-model="form.days"
+            placeholder="存放天数"
+            type="number"
+            :adjust-position="false"
+            :cursor-spacing="100"
+          />
         </view>
 
         <view class="form-row photo-row">
@@ -208,6 +228,11 @@ async function seedDemo() {
       }
     }
   })
+}
+
+function onImgError(f) {
+  // 图片加载失败（如权限/文件缺失）时回退为首字占位
+  f.imgError = true
 }
 
 function openAdd() {

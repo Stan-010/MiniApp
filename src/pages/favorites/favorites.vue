@@ -15,41 +15,41 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import { listFavoriteDishIds, listDishesByIds, removeFavoriteByDish } from '../../utils/api'
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
+import { listFavoriteDishIds, listDishesByIds, removeFavoriteByDish } from '../../utils/api';
 
-const dishes = ref([])
+const dishes = ref([]);
 
 function previewText(d) {
-  const t = d.customerNote || d.chefNote || ''
-  return t.split('\n')[0]
+  const t = d.customerNote || d.chefNote || '';
+  return t.split('\n')[0];
 }
 
 async function load() {
   try {
-    const ids = await listFavoriteDishIds()
-    dishes.value = await listDishesByIds(ids)
+    const ids = await listFavoriteDishIds();
+    dishes.value = await listDishesByIds(ids);
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   }
 }
 
 async function unfav(d) {
   try {
-    await removeFavoriteByDish(d._id)
-    load()
+    await removeFavoriteByDish(d._id);
+    load();
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
 }
 
 function goDetail(id) {
-  uni.navigateTo({ url: `/pages/dish-detail/dish-detail?id=${id}` })
+  uni.navigateTo({ url: `/pages/dish-detail/dish-detail?id=${id}` });
 }
 
-onShow(load)
+onShow(load);
 </script>
 
 <style>

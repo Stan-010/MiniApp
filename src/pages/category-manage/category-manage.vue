@@ -24,39 +24,39 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import { listCategories, addCategory, removeCategory } from '../../utils/api'
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
+import { listCategories, addCategory, removeCategory } from '../../utils/api';
 
-const categories = ref([])
-const newName = ref('')
+const categories = ref([]);
+const newName = ref('');
 
 async function load() {
   try {
-    categories.value = await listCategories()
+    categories.value = await listCategories();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   }
 }
 
 async function add() {
-  const name = newName.value.trim()
+  const name = newName.value.trim();
   if (!name) {
-    uni.showToast({ title: '请输入分类名', icon: 'none' })
-    return
+    uni.showToast({ title: '请输入分类名', icon: 'none' });
+    return;
   }
   if (categories.value.some((c) => c.name === name)) {
-    uni.showToast({ title: '分类已存在', icon: 'none' })
-    return
+    uni.showToast({ title: '分类已存在', icon: 'none' });
+    return;
   }
   try {
-    await addCategory(name)
-    newName.value = ''
-    load()
+    await addCategory(name);
+    newName.value = '';
+    load();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '添加失败', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '添加失败', icon: 'none' });
   }
 }
 
@@ -66,19 +66,19 @@ function remove(c) {
     content: `确定删除「${c.name}」？该分类下的菜品将归入「未分类」。`,
     confirmColor: '#fa5151',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await removeCategory(c._id)
-        load()
+        await removeCategory(c._id);
+        load();
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '删除失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '删除失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
-onShow(load)
+onShow(load);
 </script>
 
 <style>

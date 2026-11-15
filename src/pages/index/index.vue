@@ -22,21 +22,29 @@
           class="cat-rail-item"
           :class="{ active: currentCategory === 'all' }"
           @tap="selectCategory('all')"
-        >全部</view>
+          >全部</view
+        >
         <view
           v-for="c in categories"
           :key="c._id"
           class="cat-rail-item"
           :class="{ active: currentCategory === c._id }"
           @tap="selectCategory(c._id)"
-        >{{ c.name }}</view>
+          >{{ c.name }}</view
+        >
       </scroll-view>
 
       <scroll-view scroll-y class="dish-pane">
         <view v-if="loading" class="empty">加载中…</view>
         <view v-else-if="!dishes.length" class="empty">这个分类还没有菜\n点「＋ 加菜」添加</view>
         <view v-for="d in dishes" :key="d._id" class="dish-row">
-          <image v-if="d.image" class="dish-img" :src="d.image" mode="aspectFill" @tap="goDetail(d._id)" />
+          <image
+            v-if="d.image"
+            class="dish-img"
+            :src="d.image"
+            mode="aspectFill"
+            @tap="goDetail(d._id)"
+          />
           <view class="dish-main" @tap="goDetail(d._id)">
             <view class="dish-name-row">
               <text class="dish-name">{{ d.name }}</text>
@@ -52,7 +60,9 @@
 
     <!-- 底部：已点栏 -->
     <view class="bottom-bar" @tap="goPreview">
-      <view class="bb-count" :class="{ none: appStore.draftCount === 0 }">{{ appStore.draftCount }}</view>
+      <view class="bb-count" :class="{ none: appStore.draftCount === 0 }">{{
+        appStore.draftCount
+      }}</view>
       <text class="bb-text">已点 {{ appStore.draftCount }} 件 · 去下单 ›</text>
     </view>
 
@@ -76,7 +86,9 @@
         />
         <view class="sheet-actions">
           <view class="sheet-btn cancel" @tap="showQuickAdd = false">取消</view>
-          <view class="sheet-btn ok" @tap="confirmQuickAdd">{{ savingQuick ? '添加中…' : '加入菜单并点单' }}</view>
+          <view class="sheet-btn ok" @tap="confirmQuickAdd">{{
+            savingQuick ? '添加中…' : '加入菜单并点单'
+          }}</view>
         </view>
       </view>
     </view>
@@ -84,76 +96,85 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { ref } from 'vue';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import {
-  listCategories, ensurePresetCategories, listDishes, addDish,
-  getDraftOrder, setOrderItem
-} from '../../utils/api'
-import { serverDate } from '../../utils/cloud'
-import { classifyDish } from '../../utils/category-rules'
-import { ROLE, DISH_STATUS } from '../../utils/constants'
-import { useAppStore } from '../../store/app'
+  listCategories,
+  ensurePresetCategories,
+  listDishes,
+  addDish,
+  getDraftOrder,
+  setOrderItem
+} from '../../utils/api';
+import { serverDate } from '../../utils/cloud';
+import { classifyDish } from '../../utils/category-rules';
+import { ROLE, DISH_STATUS } from '../../utils/constants';
+import { useAppStore } from '../../store/app';
 
-const appStore = useAppStore()
-const categories = ref([])
-const dishes = ref([])
-const keyword = ref('')
-const currentCategory = ref('all')
-const loading = ref(true)
-const draftMap = ref({})
-const showQuickAdd = ref(false)
-const quickName = ref('')
-const quickNote = ref('')
-const savingQuick = ref(false)
+const appStore = useAppStore();
+const categories = ref([]);
+const dishes = ref([]);
+const keyword = ref('');
+const currentCategory = ref('all');
+const loading = ref(true);
+const draftMap = ref({});
+const showQuickAdd = ref(false);
+const quickName = ref('');
+const quickNote = ref('');
+const savingQuick = ref(false);
 
 function countOf(id) {
-  return draftMap.value[id] || 0
+  return draftMap.value[id] || 0;
 }
 
 async function loadDishes() {
-  const f = {}
-  if (currentCategory.value !== 'all') f.categoryId = currentCategory.value
-  if (keyword.value.trim()) f.keyword = keyword.value.trim()
-  dishes.value = await listDishes(f)
+  const f = {};
+  if (currentCategory.value !== 'all') f.categoryId = currentCategory.value;
+  if (keyword.value.trim()) f.keyword = keyword.value.trim();
+  dishes.value = await listDishes(f);
 }
 
 async function loadDraft() {
-  const draft = await getDraftOrder()
-  draftMap.value = {}
-  ;(draft && draft.items ? draft.items : []).forEach((i) => {
-    draftMap.value[i.dishId] = i.count
-  })
+  const draft = await getDraftOrder();
+  draftMap.value = {};
+  (draft && draft.items ? draft.items : []).forEach((i) => {
+    draftMap.value[i.dishId] = i.count;
+  });
 }
 
 function promptRole() {
   uni.showActionSheet({
     itemList: ['客户（点单的人）', '厨师（做菜的人）'],
     success: async (res) => {
-      const role = res.tapIndex === 0 ? ROLE.CUSTOMER : ROLE.CHEF
+      const role = res.tapIndex === 0 ? ROLE.CUSTOMER : ROLE.CHEF;
       try {
-        await appStore.chooseRole(role)
-        uni.showToast({ title: '身份已设置', icon: 'none' })
+        await appStore.chooseRole(role);
+        uni.showToast({ title: '身份已设置', icon: 'none' });
       } catch (e) {
-        console.error(e)
+        console.error(e);
       }
     }
-  })
+  });
 }
 
-const TAB_ROUTES = ['pages/index/index', 'pages/orders/orders', 'pages/fridge/fridge', 'pages/mine/mine']
+const TAB_ROUTES = [
+  'pages/index/index',
+  'pages/orders/orders',
+  'pages/fridge/fridge',
+  'pages/mine/mine'
+];
 
 /** 更新订单 tab 角标（纯装饰，非 tab 页或失败时静默忽略） */
 function updateOrderBadge() {
   // #ifdef MP-WEIXIN
   try {
-    const pages = getCurrentPages()
-    const current = pages && pages.length ? pages[pages.length - 1] : null
-    if (!current || !TAB_ROUTES.includes(current.route)) return
+    const pages = getCurrentPages();
+    const current = pages && pages.length ? pages[pages.length - 1] : null;
+    if (!current || !TAB_ROUTES.includes(current.route)) return;
     if (appStore.role === ROLE.CHEF && appStore.orderCount > 0) {
-      uni.setTabBarBadge({ index: 1, text: String(appStore.orderCount) })
+      uni.setTabBarBadge({ index: 1, text: String(appStore.orderCount) });
     } else {
-      uni.removeTabBarBadge({ index: 1 })
+      uni.removeTabBarBadge({ index: 1 });
     }
   } catch (e) {
     // 忽略：角标只是提示，不影响功能
@@ -161,90 +182,90 @@ function updateOrderBadge() {
   // #endif
 }
 
-let groupPrompted = false
+let groupPrompted = false;
 
 async function load() {
-  loading.value = true
+  loading.value = true;
   try {
-    if (!appStore.roleLoaded) await appStore.loadRole()
-    if (!appStore.role) promptRole()
+    if (!appStore.roleLoaded) await appStore.loadRole();
+    if (!appStore.role) promptRole();
     if (!appStore.groupId) {
       if (!groupPrompted) {
-        groupPrompted = true
+        groupPrompted = true;
         uni.showModal({
           title: '还没有加入家庭',
           content: '先到「我的」页创建家庭，或输入家人给你的邀请码加入',
           showCancel: false,
           confirmText: '去设置',
           success: () => uni.switchTab({ url: '/pages/mine/mine' })
-        })
+        });
       }
-      dishes.value = []
-      categories.value = []
-      return
+      dishes.value = [];
+      categories.value = [];
+      return;
     }
-    await ensurePresetCategories()
-    categories.value = await listCategories()
-    await loadDishes()
-    await loadDraft()
-    await appStore.refreshCounts()
-    updateOrderBadge()
+    await ensurePresetCategories();
+    categories.value = await listCategories();
+    await loadDishes();
+    await loadDraft();
+    await appStore.refreshCounts();
+    updateOrderBadge();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function selectCategory(id) {
-  currentCategory.value = id
-  loadDishes().catch((e) => console.error(e))
+  currentCategory.value = id;
+  loadDishes().catch((e) => console.error(e));
 }
 
 function doSearch() {
-  loadDishes().catch((e) => console.error(e))
+  loadDishes().catch((e) => console.error(e));
 }
 
 function clearSearch() {
-  keyword.value = ''
-  loadDishes().catch((e) => console.error(e))
+  keyword.value = '';
+  loadDishes().catch((e) => console.error(e));
 }
 
 async function changeCount(d, delta) {
-  const cur = countOf(d._id)
-  const next = Math.max(0, cur + delta)
-  draftMap.value[d._id] = next
+  const cur = countOf(d._id);
+  const next = Math.max(0, cur + delta);
+  draftMap.value[d._id] = next;
   try {
-    await setOrderItem(d._id, d.name, next, '', d.image || '')
-    appStore.draftCount = Object.values(draftMap.value).reduce((s, c) => s + c, 0)
-    appStore.refreshCounts()
+    await setOrderItem(d._id, d.name, next, '', d.image || '');
+    appStore.draftCount = Object.values(draftMap.value).reduce((s, c) => s + c, 0);
+    appStore.refreshCounts();
   } catch (e) {
-    draftMap.value[d._id] = cur
-    console.error(e)
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    draftMap.value[d._id] = cur;
+    console.error(e);
+    uni.showToast({ title: '操作失败', icon: 'none' });
   }
 }
 
 function onAddDish() {
   if (appStore.role === ROLE.CHEF) {
-    uni.navigateTo({ url: '/pages/dish-edit/dish-edit' })
+    uni.navigateTo({ url: '/pages/dish-edit/dish-edit' });
   } else {
-    showQuickAdd.value = true
+    showQuickAdd.value = true;
   }
 }
 
 async function confirmQuickAdd() {
-  if (savingQuick.value) return
-  const name = quickName.value.trim()
+  if (savingQuick.value) return;
+  const name = quickName.value.trim();
   if (!name) {
-    uni.showToast({ title: '请填写菜名', icon: 'none' })
-    return
+    uni.showToast({ title: '请填写菜名', icon: 'none' });
+    return;
   }
-  savingQuick.value = true
+  savingQuick.value = true;
   try {
-    const note = quickNote.value.trim()
-    const categoryId = classifyDish(name, categories.value)
+    const note = quickNote.value.trim();
+    const categoryId = classifyDish(name, categories.value);
     const res = await addDish({
       name,
       categoryId,
@@ -256,38 +277,38 @@ async function confirmQuickAdd() {
       searchText: (name + ' ' + note).trim(),
       createTime: serverDate(),
       updateTime: serverDate()
-    })
-    await setOrderItem(res._id, name, 1, note)
-    quickName.value = ''
-    quickNote.value = ''
-    showQuickAdd.value = false
-    appStore.refreshCounts()
-    uni.showToast({ title: '已加入菜单并点单', icon: 'success' })
-    loadDishes().catch((e) => console.error(e))
+    });
+    await setOrderItem(res._id, name, 1, note);
+    quickName.value = '';
+    quickNote.value = '';
+    showQuickAdd.value = false;
+    appStore.refreshCounts();
+    uni.showToast({ title: '已加入菜单并点单', icon: 'success' });
+    loadDishes().catch((e) => console.error(e));
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '添加失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '添加失败，请确认云开发已开通', icon: 'none' });
   } finally {
-    savingQuick.value = false
+    savingQuick.value = false;
   }
 }
 
 function goDetail(id) {
-  uni.navigateTo({ url: `/pages/dish-detail/dish-detail?id=${id}` })
+  uni.navigateTo({ url: `/pages/dish-detail/dish-detail?id=${id}` });
 }
 
 function goPreview() {
-  uni.navigateTo({ url: '/pages/order-preview/order-preview' })
+  uni.navigateTo({ url: '/pages/order-preview/order-preview' });
 }
 
 onShow(() => {
-  load()
-})
+  load();
+});
 
 onPullDownRefresh(async () => {
-  await load()
-  uni.stopPullDownRefresh()
-})
+  await load();
+  uni.stopPullDownRefresh();
+});
 </script>
 
 <style>

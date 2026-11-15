@@ -6,7 +6,10 @@
       <view class="section-title">历史点单</view>
       <view v-if="!myOrders.length" class="hint">暂无点单记录</view>
       <view v-for="o in myOrders" :key="o._id" class="my-order-card">
-        <view class="my-order-head">{{ fmtTime(o.submitTime || o.createTime) }} · {{ ORDER_STATUS_NAMES[o.status] || '' }}</view>
+        <view class="my-order-head"
+          >{{ fmtTime(o.submitTime || o.createTime) }} ·
+          {{ ORDER_STATUS_NAMES[o.status] || '' }}</view
+        >
         <view v-for="(it, i) in o.items" :key="i" class="my-order-item">
           <image v-if="itemImage(it)" class="my-order-img" :src="itemImage(it)" mode="aspectFill" />
           <text class="my-order-name">{{ it.dishName }}</text>
@@ -35,13 +38,20 @@
         <view class="order-head">订单 · {{ fmtTime(o.submitTime) }}</view>
         <view v-for="(it, i) in o.items" :key="i" class="order-item">
           <view class="order-item-top">
-            <image v-if="itemImage(it)" class="order-item-img" :src="itemImage(it)" mode="aspectFill" />
+            <image
+              v-if="itemImage(it)"
+              class="order-item-img"
+              :src="itemImage(it)"
+              mode="aspectFill"
+            />
             <text class="order-item-name">{{ it.dishName }}</text>
             <text class="order-item-count">×{{ it.count }}</text>
           </view>
           <view v-if="it.note" class="order-item-note">客户备注：{{ it.note }}</view>
           <view v-if="chefNoteOf(it.dishId)" class="chef-note">📖 {{ chefNoteOf(it.dishId) }}</view>
-          <view v-else class="chef-note missing" @tap="goEdit(it.dishId)">还没有做法说明，点此补充 ›</view>
+          <view v-else class="chef-note missing" @tap="goEdit(it.dishId)"
+            >还没有做法说明，点此补充 ›</view
+          >
         </view>
         <view class="order-foot">
           <view class="done-btn" @tap="markDone(o)">完成订单</view>
@@ -59,71 +69,79 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import {
-  listDishes, listPendingDishes, listSubmittedOrders, listDoneOrders, markOrderDone, listMyOrders
-} from '../../utils/api'
-import { ROLE, ORDER_STATUS_NAMES } from '../../utils/constants'
-import { useAppStore } from '../../store/app'
-import OrderCart from '../../components/order-cart/order-cart.vue'
+  listDishes,
+  listPendingDishes,
+  listSubmittedOrders,
+  listDoneOrders,
+  markOrderDone,
+  listMyOrders
+} from '../../utils/api';
+import { ROLE, ORDER_STATUS_NAMES } from '../../utils/constants';
+import { useAppStore } from '../../store/app';
+import OrderCart from '../../components/order-cart/order-cart.vue';
 
-const appStore = useAppStore()
-const pendingDishes = ref([])
-const orders = ref([])
-const doneOrders = ref([])
-const myOrders = ref([])
-const dishMap = ref({})
+const appStore = useAppStore();
+const pendingDishes = ref([]);
+const orders = ref([]);
+const doneOrders = ref([]);
+const myOrders = ref([]);
+const dishMap = ref({});
 
-const isCustomer = computed(() => appStore.role === ROLE.CUSTOMER)
+const isCustomer = computed(() => appStore.role === ROLE.CUSTOMER);
 
 function fmtTime(d) {
-  if (!d) return ''
-  const t = new Date(d)
-  const p = (n) => (n < 10 ? '0' + n : '' + n)
-  return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}`
+  if (!d) return '';
+  const t = new Date(d);
+  const p = (n) => (n < 10 ? '0' + n : '' + n);
+  return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}`;
 }
 
 function chefNoteOf(id) {
-  const m = dishMap.value[id]
-  return m ? m.chefNote : ''
+  const m = dishMap.value[id];
+  return m ? m.chefNote : '';
 }
 
 function itemImage(it) {
-  const m = dishMap.value[it.dishId]
-  return it.image || (m ? m.image : '') || ''
+  const m = dishMap.value[it.dishId];
+  return it.image || (m ? m.image : '') || '';
 }
 
 async function load() {
   try {
     const [all, submitted, doneList, pending] = await Promise.all([
-      listDishes(), listSubmittedOrders(), listDoneOrders(20), listPendingDishes()
-    ])
-    dishMap.value = {}
+      listDishes(),
+      listSubmittedOrders(),
+      listDoneOrders(20),
+      listPendingDishes()
+    ]);
+    dishMap.value = {};
     all.forEach((d) => {
-      dishMap.value[d._id] = { chefNote: d.chefNote || '', image: d.image || '' }
-    })
-    orders.value = submitted
-    doneOrders.value = doneList
-    pendingDishes.value = pending
-    appStore.refreshCounts()
+      dishMap.value[d._id] = { chefNote: d.chefNote || '', image: d.image || '' };
+    });
+    orders.value = submitted;
+    doneOrders.value = doneList;
+    pendingDishes.value = pending;
+    appStore.refreshCounts();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   }
 }
 
 async function loadCustomerData() {
   try {
-    const [all, mine] = await Promise.all([listDishes(), listMyOrders()])
-    dishMap.value = {}
+    const [all, mine] = await Promise.all([listDishes(), listMyOrders()]);
+    dishMap.value = {};
     all.forEach((d) => {
-      dishMap.value[d._id] = { chefNote: d.chefNote || '', image: d.image || '' }
-    })
-    myOrders.value = mine
+      dishMap.value[d._id] = { chefNote: d.chefNote || '', image: d.image || '' };
+    });
+    myOrders.value = mine;
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   }
 }
 
@@ -133,37 +151,37 @@ function markDone(o) {
     content: '这单做完了？完成后会移到历史订单。',
     confirmColor: '#07c160',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await markOrderDone(o._id)
-        load()
-        uni.showToast({ title: '已完成', icon: 'success' })
+        await markOrderDone(o._id);
+        load();
+        uni.showToast({ title: '已完成', icon: 'success' });
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '操作失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '操作失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 function goDetail(id) {
-  uni.navigateTo({ url: `/pages/dish-detail/dish-detail?id=${id}` })
+  uni.navigateTo({ url: `/pages/dish-detail/dish-detail?id=${id}` });
 }
 
 function goEdit(id) {
-  uni.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${id}` })
+  uni.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${id}` });
 }
 
 onShow(async () => {
-  if (!appStore.roleLoaded) await appStore.loadRole()
+  if (!appStore.roleLoaded) await appStore.loadRole();
   if (isCustomer.value) {
-    uni.setNavigationBarTitle({ title: '购物车' })
-    loadCustomerData()
+    uni.setNavigationBarTitle({ title: '购物车' });
+    loadCustomerData();
   } else {
-    uni.setNavigationBarTitle({ title: '订单' })
-    load()
+    uni.setNavigationBarTitle({ title: '订单' });
+    load();
   }
-})
+});
 </script>
 
 <style>

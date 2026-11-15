@@ -31,57 +31,62 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import {
-  getDraftOrder, setOrderItem, updateOrderItemNote, submitOrder, clearDraftOrder, listDishes
-} from '../../utils/api'
-import { useAppStore } from '../../store/app'
+  getDraftOrder,
+  setOrderItem,
+  updateOrderItemNote,
+  submitOrder,
+  clearDraftOrder,
+  listDishes
+} from '../../utils/api';
+import { useAppStore } from '../../store/app';
 
-const appStore = useAppStore()
-const items = ref([])
-const imageMap = ref({})
+const appStore = useAppStore();
+const items = ref([]);
+const imageMap = ref({});
 
-const totalCount = computed(() => items.value.reduce((s, i) => s + i.count, 0))
+const totalCount = computed(() => items.value.reduce((s, i) => s + i.count, 0));
 
 function imageOf(it) {
-  return it.image || imageMap.value[it.dishId] || ''
+  return it.image || imageMap.value[it.dishId] || '';
 }
 
 async function load() {
   try {
-    const draft = await getDraftOrder()
-    items.value = draft && draft.items ? draft.items : []
-    const all = await listDishes()
-    imageMap.value = {}
+    const draft = await getDraftOrder();
+    items.value = draft && draft.items ? draft.items : [];
+    const all = await listDishes();
+    imageMap.value = {};
     all.forEach((d) => {
-      imageMap.value[d._id] = d.image || ''
-    })
-    appStore.refreshCounts()
+      imageMap.value[d._id] = d.image || '';
+    });
+    appStore.refreshCounts();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   }
 }
 
 async function changeCount(it, delta) {
-  const next = Math.max(0, it.count + delta)
-  it.count = next
+  const next = Math.max(0, it.count + delta);
+  it.count = next;
   try {
-    await setOrderItem(it.dishId, it.dishName, next, it.note, it.image || '')
-    if (next <= 0) load()
-    appStore.refreshCounts()
+    await setOrderItem(it.dishId, it.dishName, next, it.note, it.image || '');
+    if (next <= 0) load();
+    appStore.refreshCounts();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '操作失败', icon: 'none' });
   }
 }
 
 async function saveNote(it) {
   try {
-    await updateOrderItemNote(it.dishId, it.note || '')
+    await updateOrderItemNote(it.dishId, it.note || '');
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
 }
 
@@ -91,18 +96,18 @@ function clearCart() {
     content: '确定清空购物车里的所有菜品？',
     confirmColor: '#fa5151',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await clearDraftOrder()
-        items.value = []
-        appStore.refreshCounts()
-        uni.showToast({ title: '已清空', icon: 'success' })
+        await clearDraftOrder();
+        items.value = [];
+        appStore.refreshCounts();
+        uni.showToast({ title: '已清空', icon: 'success' });
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '清空失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '清空失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 function submit() {
@@ -111,21 +116,21 @@ function submit() {
     content: `共 ${totalCount.value} 件，下单后厨师就能看到。`,
     confirmColor: '#07c160',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await submitOrder()
-        appStore.refreshCounts()
-        uni.showToast({ title: '已下单', icon: 'success' })
-        load()
+        await submitOrder();
+        appStore.refreshCounts();
+        uni.showToast({ title: '已下单', icon: 'success' });
+        load();
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '下单失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '下单失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
-onShow(load)
+onShow(load);
 </script>
 
 <style>

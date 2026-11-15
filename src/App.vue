@@ -1,11 +1,11 @@
 <script>
-import { initCloud } from './utils/cloud'
+import { initCloud } from './utils/cloud';
 
 export default {
   onLaunch() {
-    initCloud()
+    initCloud();
   }
-}
+};
 </script>
 
 <style>

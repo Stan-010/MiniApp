@@ -7,31 +7,49 @@
     </view>
 
     <scroll-view scroll-x class="cat-bar" :show-scrollbar="false">
-      <view class="cat-item" :class="{ active: currentCategory === 'all' }" @tap="selectCategory('all')">全部</view>
+      <view
+        class="cat-item"
+        :class="{ active: currentCategory === 'all' }"
+        @tap="selectCategory('all')"
+        >全部</view
+      >
       <view
         v-for="c in categories"
         :key="c._id"
         class="cat-item"
         :class="{ active: currentCategory === c._id }"
         @tap="selectCategory(c._id)"
-      >{{ c.name }}</view>
+        >{{ c.name }}</view
+      >
     </scroll-view>
 
     <view v-if="loading" class="empty">加载中…</view>
     <view v-else-if="!items.length" class="empty">
       冰箱还是空的\n点「＋ 新增食材」把食材放进来
-      <view class="seed-btn" @tap="seedDemo">⚡ 一键导入测试食材（土豆、蚝油、羊肉卷…共 18 样）</view>
+      <view class="seed-btn" @tap="seedDemo"
+        >⚡ 一键导入测试食材（土豆、蚝油、羊肉卷…共 18 样）</view
+      >
     </view>
     <view v-else class="fridge-list">
       <view v-for="f in items" :key="f._id" class="fridge-card" @tap="openEdit(f)">
-        <image v-if="f.image && !f.imgError" class="fridge-img" :src="f.image" mode="aspectFill" @error="onImgError(f)" />
+        <image
+          v-if="f.image && !f.imgError"
+          class="fridge-img"
+          :src="f.image"
+          mode="aspectFill"
+          @error="onImgError(f)"
+        />
         <view v-else class="fridge-img placeholder">{{ f.name.slice(0, 1) }}</view>
         <view class="fridge-info">
           <view class="fridge-name-row">
             <text class="fridge-name">{{ f.name }}</text>
-            <text class="fresh-tag" :class="f.freshness">{{ FRESHNESS_NAMES[f.freshness] || '' }}</text>
+            <text class="fresh-tag" :class="f.freshness">{{
+              FRESHNESS_NAMES[f.freshness] || ''
+            }}</text>
           </view>
-          <view class="fridge-meta">{{ categoryName(f.categoryId) }} · {{ f.amount }} {{ f.unit }}</view>
+          <view class="fridge-meta"
+            >{{ categoryName(f.categoryId) }} · {{ f.amount }} {{ f.unit }}</view
+          >
           <view class="expiry" :class="expiryInfo(f).state">{{ expiryInfo(f).text }}</view>
         </view>
         <text class="edit-arrow">›</text>
@@ -52,7 +70,13 @@
         />
 
         <view class="form-row">
-          <picker class="picker" mode="selector" :range="catNames" :value="form.categoryIndex" @change="onCatChange">
+          <picker
+            class="picker"
+            mode="selector"
+            :range="catNames"
+            :value="form.categoryIndex"
+            @change="onCatChange"
+          >
             <view class="picker-view">分类：{{ catNames[form.categoryIndex] || '未分类' }}</view>
           </picker>
         </view>
@@ -66,13 +90,25 @@
             :adjust-position="false"
             :cursor-spacing="100"
           />
-          <picker class="picker half" mode="selector" :range="FRIDGE_UNITS" :value="form.unitIndex" @change="onUnitChange">
+          <picker
+            class="picker half"
+            mode="selector"
+            :range="FRIDGE_UNITS"
+            :value="form.unitIndex"
+            @change="onUnitChange"
+          >
             <view class="picker-view">单位：{{ FRIDGE_UNITS[form.unitIndex] }}</view>
           </picker>
         </view>
 
         <view class="form-row">
-          <picker class="picker" mode="selector" :range="freshnessNames" :value="form.freshnessIndex" @change="onFreshChange">
+          <picker
+            class="picker"
+            mode="selector"
+            :range="freshnessNames"
+            :value="form.freshnessIndex"
+            @change="onFreshChange"
+          >
             <view class="picker-view">新鲜程度：{{ freshnessNames[form.freshnessIndex] }}</view>
           </picker>
           <input
@@ -86,7 +122,9 @@
         </view>
 
         <view class="form-row photo-row">
-          <view class="photo-btn" @tap="chooseImage">📷 {{ form.image ? '更换照片' : '拍照 / 选照片' }}</view>
+          <view class="photo-btn" @tap="chooseImage"
+            >📷 {{ form.image ? '更换照片' : '拍照 / 选照片' }}</view
+          >
           <image v-if="form.image" class="photo-preview" :src="form.image" mode="aspectFill" />
           <text v-if="form.image" class="photo-remove" @tap="removeImage">移除</text>
         </view>
@@ -102,22 +140,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import {
-  listFridgeCategories, ensurePresetFridgeCategories, listFridge,
-  addFridge, updateFridge, removeFridge, removeExpiredFridge
-} from '../../utils/api'
-import { serverDate } from '../../utils/cloud'
-import { FRIDGE_UNITS, FRESHNESS_NAMES } from '../../utils/constants'
+  listFridgeCategories,
+  ensurePresetFridgeCategories,
+  listFridge,
+  addFridge,
+  updateFridge,
+  removeFridge,
+  removeExpiredFridge
+} from '../../utils/api';
+import { serverDate } from '../../utils/cloud';
+import { FRIDGE_UNITS, FRESHNESS_NAMES } from '../../utils/constants';
 
-const categories = ref([])
-const items = ref([])
-const currentCategory = ref('all')
-const loading = ref(true)
-const showForm = ref(false)
-const editingId = ref('')
-const saving = ref(false)
+const categories = ref([]);
+const items = ref([]);
+const currentCategory = ref('all');
+const loading = ref(true);
+const showForm = ref(false);
+const editingId = ref('');
+const saving = ref(false);
 const form = ref({
   name: '',
   categoryIndex: 0,
@@ -126,52 +169,52 @@ const form = ref({
   freshnessIndex: 0,
   days: '7',
   image: ''
-})
+});
 
-const catNames = computed(() => ['未分类', ...categories.value.map((c) => c.name)])
-const freshnessNames = computed(() => Object.values(FRESHNESS_NAMES))
+const catNames = computed(() => ['未分类', ...categories.value.map((c) => c.name)]);
+const freshnessNames = computed(() => Object.values(FRESHNESS_NAMES));
 
 function categoryName(id) {
-  const c = categories.value.find((x) => x._id === id)
-  return c ? c.name : '未分类'
+  const c = categories.value.find((x) => x._id === id);
+  return c ? c.name : '未分类';
 }
 
 function expiryInfo(f) {
-  if (!f.addTime || !f.days) return { text: '未设置存放天数', state: 'none' }
-  const exp = new Date(f.addTime).getTime() + Number(f.days) * 86400000
-  const left = Math.ceil((exp - Date.now()) / 86400000)
-  if (left < 0) return { text: `已过期 ${-left} 天`, state: 'expired' }
-  if (left <= 3) return { text: left === 0 ? '今天过期' : `${left} 天后过期`, state: 'warning' }
-  return { text: `还剩 ${left} 天`, state: 'normal' }
+  if (!f.addTime || !f.days) return { text: '未设置存放天数', state: 'none' };
+  const exp = new Date(f.addTime).getTime() + Number(f.days) * 86400000;
+  const left = Math.ceil((exp - Date.now()) / 86400000);
+  if (left < 0) return { text: `已过期 ${-left} 天`, state: 'expired' };
+  if (left <= 3) return { text: left === 0 ? '今天过期' : `${left} 天后过期`, state: 'warning' };
+  return { text: `还剩 ${left} 天`, state: 'normal' };
 }
 
 async function load() {
-  loading.value = true
+  loading.value = true;
   try {
-    await ensurePresetFridgeCategories()
-    categories.value = await listFridgeCategories()
-    await loadItems()
+    await ensurePresetFridgeCategories();
+    categories.value = await listFridgeCategories();
+    await loadItems();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function loadItems() {
-  const f = {}
-  if (currentCategory.value !== 'all') f.categoryId = currentCategory.value
-  items.value = await listFridge(f)
+  const f = {};
+  if (currentCategory.value !== 'all') f.categoryId = currentCategory.value;
+  items.value = await listFridge(f);
 }
 
 function selectCategory(id) {
-  currentCategory.value = id
-  loadItems().catch((e) => console.error(e))
+  currentCategory.value = id;
+  loadItems().catch((e) => console.error(e));
 }
 
 function goAi() {
-  uni.navigateTo({ url: '/pages/ai-recommend/ai-recommend' })
+  uni.navigateTo({ url: '/pages/ai-recommend/ai-recommend' });
 }
 
 /** 测试用：一键导入示例食材（冰箱为空时显示） */
@@ -195,17 +238,17 @@ async function seedDemo() {
     { name: '牛肉', category: '肉类', amount: '500', unit: '克', days: 7 },
     { name: '鱼', category: '肉类', amount: '2', unit: '条', days: 5 },
     { name: '虾', category: '肉类', amount: '500', unit: '克', days: 3 }
-  ]
+  ];
   uni.showModal({
     title: '导入测试食材',
     content: `将把 ${demoItems.length} 样食材导入冰箱（土豆、蚝油、羊肉卷、铁棍山药、菜心、菠菜、金针菇、包菜、白菜、鸡蛋、藕、胡萝卜、南瓜、糖蒜、鸡排、牛肉、鱼、虾）？`,
     confirmColor: '#07c160',
     success: async (res) => {
-      if (!res.confirm) return
-      uni.showLoading({ title: '导入中' })
+      if (!res.confirm) return;
+      uni.showLoading({ title: '导入中' });
       try {
         for (const d of demoItems) {
-          const c = categories.value.find((x) => x.name === d.category)
+          const c = categories.value.find((x) => x.name === d.category);
           await addFridge({
             name: d.name,
             categoryId: c ? c._id : '',
@@ -216,36 +259,44 @@ async function seedDemo() {
             image: '',
             addTime: serverDate(),
             updateTime: serverDate()
-          })
+          });
         }
-        uni.hideLoading()
-        uni.showToast({ title: '已导入 ' + demoItems.length + ' 样食材', icon: 'success' })
-        load()
+        uni.hideLoading();
+        uni.showToast({ title: '已导入 ' + demoItems.length + ' 样食材', icon: 'success' });
+        load();
       } catch (e) {
-        uni.hideLoading()
-        console.error(e)
-        uni.showToast({ title: '导入失败', icon: 'none' })
+        uni.hideLoading();
+        console.error(e);
+        uni.showToast({ title: '导入失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 function onImgError(f) {
   // 图片加载失败（如权限/文件缺失）时回退为首字占位
-  f.imgError = true
+  f.imgError = true;
 }
 
 function openAdd() {
-  editingId.value = ''
-  form.value = { name: '', categoryIndex: 0, amount: '', unitIndex: 0, freshnessIndex: 0, days: '7', image: '' }
-  showForm.value = true
+  editingId.value = '';
+  form.value = {
+    name: '',
+    categoryIndex: 0,
+    amount: '',
+    unitIndex: 0,
+    freshnessIndex: 0,
+    days: '7',
+    image: ''
+  };
+  showForm.value = true;
 }
 
 function openEdit(f) {
-  editingId.value = f._id
-  const catIdx = categories.value.findIndex((c) => c._id === f.categoryId)
-  const unitIdx = FRIDGE_UNITS.indexOf(f.unit)
-  const freshIdx = Math.max(0, Object.keys(FRESHNESS_NAMES).indexOf(f.freshness))
+  editingId.value = f._id;
+  const catIdx = categories.value.findIndex((c) => c._id === f.categoryId);
+  const unitIdx = FRIDGE_UNITS.indexOf(f.unit);
+  const freshIdx = Math.max(0, Object.keys(FRESHNESS_NAMES).indexOf(f.freshness));
   form.value = {
     name: f.name || '',
     categoryIndex: catIdx >= 0 ? catIdx + 1 : 0,
@@ -254,20 +305,20 @@ function openEdit(f) {
     freshnessIndex: freshIdx,
     days: f.days ? String(f.days) : '7',
     image: f.image || ''
-  }
-  showForm.value = true
+  };
+  showForm.value = true;
 }
 
 function onCatChange(e) {
-  form.value.categoryIndex = Number(e.detail.value)
+  form.value.categoryIndex = Number(e.detail.value);
 }
 
 function onUnitChange(e) {
-  form.value.unitIndex = Number(e.detail.value)
+  form.value.unitIndex = Number(e.detail.value);
 }
 
 function onFreshChange(e) {
-  form.value.freshnessIndex = Number(e.detail.value)
+  form.value.freshnessIndex = Number(e.detail.value);
 }
 
 function chooseImage() {
@@ -275,45 +326,46 @@ function chooseImage() {
     count: 1,
     sizeType: ['compressed'],
     success: async (res) => {
-      const filePath = res.tempFilePaths[0]
-      const extMatch = filePath.match(/\.(\w+)$/)
-      const ext = extMatch ? extMatch[1] : 'jpg'
-      uni.showLoading({ title: '上传中' })
+      const filePath = res.tempFilePaths[0];
+      const extMatch = filePath.match(/\.(\w+)$/);
+      const ext = extMatch ? extMatch[1] : 'jpg';
+      uni.showLoading({ title: '上传中' });
       try {
         const cloudRes = await wx.cloud.uploadFile({
           cloudPath: `fridge/${Date.now()}_${Math.floor(Math.random() * 100000)}.${ext}`,
           filePath
-        })
-        form.value.image = cloudRes.fileID
+        });
+        form.value.image = cloudRes.fileID;
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '上传失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '上传失败', icon: 'none' });
       } finally {
-        uni.hideLoading()
+        uni.hideLoading();
       }
     }
-  })
+  });
 }
 
 function removeImage() {
   if (form.value.image) {
-    wx.cloud.deleteFile({ fileList: [form.value.image] }).catch(() => {})
+    wx.cloud.deleteFile({ fileList: [form.value.image] }).catch(() => {});
   }
-  form.value.image = ''
+  form.value.image = '';
 }
 
 async function save() {
-  if (saving.value) return
-  const name = form.value.name.trim()
+  if (saving.value) return;
+  const name = form.value.name.trim();
   if (!name) {
-    uni.showToast({ title: '请填写食材名称', icon: 'none' })
-    return
+    uni.showToast({ title: '请填写食材名称', icon: 'none' });
+    return;
   }
   if (!form.value.amount.trim()) {
-    uni.showToast({ title: '请填写数量', icon: 'none' })
-    return
+    uni.showToast({ title: '请填写数量', icon: 'none' });
+    return;
   }
-  const catId = form.value.categoryIndex <= 0 ? '' : categories.value[form.value.categoryIndex - 1]._id
+  const catId =
+    form.value.categoryIndex <= 0 ? '' : categories.value[form.value.categoryIndex - 1]._id;
   const data = {
     name,
     categoryId: catId,
@@ -323,19 +375,19 @@ async function save() {
     days: Number(form.value.days) || 7,
     image: form.value.image,
     updateTime: serverDate()
-  }
-  saving.value = true
+  };
+  saving.value = true;
   try {
-    if (editingId.value) await updateFridge(editingId.value, data)
-    else await addFridge({ ...data, addTime: serverDate() })
-    showForm.value = false
-    uni.showToast({ title: '已保存', icon: 'success' })
-    load()
+    if (editingId.value) await updateFridge(editingId.value, data);
+    else await addFridge({ ...data, addTime: serverDate() });
+    showForm.value = false;
+    uni.showToast({ title: '已保存', icon: 'success' });
+    load();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '保存失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '保存失败，请确认云开发已开通', icon: 'none' });
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
@@ -345,19 +397,19 @@ function remove() {
     content: `确定把「${form.value.name}」移出冰箱？`,
     confirmColor: '#fa5151',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await removeFridge(editingId.value)
-        if (form.value.image) wx.cloud.deleteFile({ fileList: [form.value.image] }).catch(() => {})
-        showForm.value = false
-        uni.showToast({ title: '已删除', icon: 'success' })
-        load()
+        await removeFridge(editingId.value);
+        if (form.value.image) wx.cloud.deleteFile({ fileList: [form.value.image] }).catch(() => {});
+        showForm.value = false;
+        uni.showToast({ title: '已删除', icon: 'success' });
+        load();
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '删除失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '删除失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 function cleanExpired() {
@@ -366,25 +418,25 @@ function cleanExpired() {
     content: '将删除所有已过期的食材，确定吗？',
     confirmColor: '#fa5151',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        const n = await removeExpiredFridge()
-        uni.showToast({ title: `已清理 ${n} 种过期食材`, icon: 'none' })
-        load()
+        const n = await removeExpiredFridge();
+        uni.showToast({ title: `已清理 ${n} 种过期食材`, icon: 'none' });
+        load();
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '清理失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '清理失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
-onShow(load)
+onShow(load);
 
 onPullDownRefresh(async () => {
-  await load()
-  uni.stopPullDownRefresh()
-})
+  await load();
+  uni.stopPullDownRefresh();
+});
 </script>
 
 <style>

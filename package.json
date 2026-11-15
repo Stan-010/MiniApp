@@ -5,7 +5,8 @@
   "scripts": {
     "dev:mp-weixin": "uni -p mp-weixin",
     "build:mp-weixin": "uni build -p mp-weixin && node scripts/copy-cloud.mjs dist/build/mp-weixin",
-    "sync:cloud": "node scripts/copy-cloud.mjs"
+    "sync:cloud": "node scripts/copy-cloud.mjs",
+    "format": "prettier --write \"src/**/*.{js,vue,json,scss}\" \"cloudfunctions/**/*.js\" \"scripts/*.mjs\" \"*.{js,json}\""
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5030420261029002",
@@ -21,6 +22,7 @@
     "@dcloudio/uni-stacktracey": "3.0.0-5030420261029002",
     "@dcloudio/vite-plugin-uni": "3.0.0-5030420261029002",
     "@vue/runtime-core": "3.4.21",
+    "prettier": "^3.10.1",
     "vite": "5.2.8"
   }
 }

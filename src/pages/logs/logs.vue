@@ -19,30 +19,30 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import { db } from '../../utils/cloud'
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
+import { db } from '../../utils/cloud';
 
-const logs = ref([])
+const logs = ref([]);
 
 function fmtTime(d) {
-  if (!d) return ''
-  const t = new Date(d)
-  const p = (n) => (n < 10 ? '0' + n : '' + n)
-  return `${p(t.getMonth() + 1)}-${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`
+  if (!d) return '';
+  const t = new Date(d);
+  const p = (n) => (n < 10 ? '0' + n : '' + n);
+  return `${p(t.getMonth() + 1)}-${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`;
 }
 
 async function load() {
   try {
-    const res = await db().collection('logs').orderBy('time', 'desc').limit(50).get()
-    logs.value = res.data
+    const res = await db().collection('logs').orderBy('time', 'desc').limit(50).get();
+    logs.value = res.data;
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '请先创建 logs 集合', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '请先创建 logs 集合', icon: 'none' });
   }
 }
 
-onShow(load)
+onShow(load);
 </script>
 
 <style>

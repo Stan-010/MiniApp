@@ -48,75 +48,81 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import {
-  getDish, removeDish, listCategories, getDraftOrder, setOrderItem,
-  listFavoriteDishIds, addFavorite, removeFavoriteByDish
-} from '../../utils/api'
-import { ROLE } from '../../utils/constants'
-import { useAppStore } from '../../store/app'
+  getDish,
+  removeDish,
+  listCategories,
+  getDraftOrder,
+  setOrderItem,
+  listFavoriteDishIds,
+  addFavorite,
+  removeFavoriteByDish
+} from '../../utils/api';
+import { ROLE } from '../../utils/constants';
+import { useAppStore } from '../../store/app';
 
-const appStore = useAppStore()
-const id = ref('')
-const dish = ref(null)
-const isFav = ref(false)
-const categories = ref([])
-const count = ref(0)
+const appStore = useAppStore();
+const id = ref('');
+const dish = ref(null);
+const isFav = ref(false);
+const categories = ref([]);
+const count = ref(0);
 
-const isChef = computed(() => appStore.role === ROLE.CHEF)
+const isChef = computed(() => appStore.role === ROLE.CHEF);
 
 const categoryName = computed(() => {
-  if (!dish.value) return ''
-  if (dish.value.categoryId === '') return '未分类'
-  const c = categories.value.find((x) => x._id === dish.value.categoryId)
-  return c ? c.name : '—'
-})
+  if (!dish.value) return '';
+  if (dish.value.categoryId === '') return '未分类';
+  const c = categories.value.find((x) => x._id === dish.value.categoryId);
+  return c ? c.name : '—';
+});
 
 async function load() {
-  if (!id.value) return
+  if (!id.value) return;
   try {
-    if (!appStore.roleLoaded) await appStore.loadRole()
-    const [d, cats] = await Promise.all([getDish(id.value), listCategories()])
-    dish.value = d.data
-    categories.value = cats
-    const favs = await listFavoriteDishIds()
-    isFav.value = favs.includes(id.value)
-    const draft = await getDraftOrder()
-    const item = draft && draft.items ? draft.items.find((i) => i.dishId === id.value) : null
-    count.value = item ? item.count : 0
+    if (!appStore.roleLoaded) await appStore.loadRole();
+    const [d, cats] = await Promise.all([getDish(id.value), listCategories()]);
+    dish.value = d.data;
+    categories.value = cats;
+    const favs = await listFavoriteDishIds();
+    isFav.value = favs.includes(id.value);
+    const draft = await getDraftOrder();
+    const item = draft && draft.items ? draft.items.find((i) => i.dishId === id.value) : null;
+    count.value = item ? item.count : 0;
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加载失败，请确认云开发已开通', icon: 'none' });
   }
 }
 
 async function changeCount(delta) {
-  const next = Math.max(0, count.value + delta)
-  count.value = next
+  const next = Math.max(0, count.value + delta);
+  count.value = next;
   try {
-    await setOrderItem(dish.value._id, dish.value.name, next, '', dish.value.image || '')
-    appStore.refreshCounts()
+    await setOrderItem(dish.value._id, dish.value.name, next, '', dish.value.image || '');
+    appStore.refreshCounts();
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '操作失败', icon: 'none' });
   }
 }
 
 async function toggleFav() {
   try {
-    if (isFav.value) await removeFavoriteByDish(id.value)
-    else await addFavorite(id.value)
-    isFav.value = !isFav.value
-    uni.showToast({ title: isFav.value ? '已收藏' : '已取消收藏', icon: 'none' })
+    if (isFav.value) await removeFavoriteByDish(id.value);
+    else await addFavorite(id.value);
+    isFav.value = !isFav.value;
+    uni.showToast({ title: isFav.value ? '已收藏' : '已取消收藏', icon: 'none' });
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '操作失败', icon: 'none' });
   }
 }
 
 function goEdit() {
-  uni.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${id.value}` })
+  uni.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${id.value}` });
 }
 
 function remove() {
@@ -125,23 +131,23 @@ function remove() {
     content: `确定删除「${dish.value.name}」？删除后不可恢复。`,
     confirmColor: '#fa5151',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await removeDish(id.value)
-        uni.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => uni.navigateBack(), 600)
+        await removeDish(id.value);
+        uni.showToast({ title: '已删除', icon: 'success' });
+        setTimeout(() => uni.navigateBack(), 600);
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '删除失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '删除失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 onLoad((query) => {
-  id.value = query.id || ''
-  load()
-})
+  id.value = query.id || '';
+  load();
+});
 </script>
 
 <style>

@@ -1,9 +1,13 @@
 <template>
   <view class="page">
-    <view v-if="fridgeCount === 0 && !loading" class="empty">冰箱里还没有食材\n先去「冰箱」tab 加一些吧</view>
+    <view v-if="fridgeCount === 0 && !loading" class="empty"
+      >冰箱里还没有食材\n先去「冰箱」tab 加一些吧</view
+    >
     <template v-else>
       <view class="head-bar">
-        <text class="head-text">冰箱现有 {{ fridgeCount }} 种食材 · AI 推荐 · 今日剩余 {{ remaining }} 次</text>
+        <text class="head-text"
+          >冰箱现有 {{ fridgeCount }} 种食材 · AI 推荐 · 今日剩余 {{ remaining }} 次</text
+        >
         <view class="refresh-btn" @tap="recommend(true)">🔄 换一批</view>
       </view>
 
@@ -36,7 +40,11 @@
           </view>
 
           <view class="card-actions">
-            <view class="act-btn" :class="{ done: addedNames.includes(d.name) }" @tap="addToMenu(d)">
+            <view
+              class="act-btn"
+              :class="{ done: addedNames.includes(d.name) }"
+              @tap="addToMenu(d)"
+            >
               {{ addedNames.includes(d.name) ? '已在菜单' : '加入菜单' }}
             </view>
             <view class="act-btn order" @tap="addToOrder(d)">点这道菜</view>
@@ -54,77 +62,95 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import {
-  listFridge, listDishes, listCategories, addDish, findDishByName, setOrderItem,
-  getAiDailyCount, incAiDailyCount
-} from '../../utils/api'
-import { serverDate } from '../../utils/cloud'
-import { log } from '../../utils/logger'
-import { classifyDish } from '../../utils/category-rules'
-import { ROLE, DISH_STATUS, AI_DAILY_LIMIT } from '../../utils/constants'
-import { useAppStore } from '../../store/app'
+  listFridge,
+  listDishes,
+  listCategories,
+  addDish,
+  findDishByName,
+  setOrderItem,
+  getAiDailyCount,
+  incAiDailyCount
+} from '../../utils/api';
+import { serverDate } from '../../utils/cloud';
+import { log } from '../../utils/logger';
+import { classifyDish } from '../../utils/category-rules';
+import { ROLE, DISH_STATUS, AI_DAILY_LIMIT } from '../../utils/constants';
+import { useAppStore } from '../../store/app';
 
-const appStore = useAppStore()
-const fridgeItems = ref([])
-const dishList = ref([])
-const categories = ref([])
-const dishes = ref([])
-const excludeNames = ref([])
-const addedNames = ref([])
-const loading = ref(false)
-const errorMsg = ref('')
-const fridgeCount = ref(-1)
-const remaining = ref(AI_DAILY_LIMIT)
+const appStore = useAppStore();
+const fridgeItems = ref([]);
+const dishList = ref([]);
+const categories = ref([]);
+const dishes = ref([]);
+const excludeNames = ref([]);
+const addedNames = ref([]);
+const loading = ref(false);
+const errorMsg = ref('');
+const fridgeCount = ref(-1);
+const remaining = ref(AI_DAILY_LIMIT);
 
 function norm(s) {
-  return String(s || '').replace(/\s+/g, '').toLowerCase()
+  return String(s || '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
 }
 
 function isMissing(d, ing) {
-  const have = fridgeItems.value.some((f) => norm(f.name) === norm(ing.name) || norm(f.name).includes(norm(ing.name)) || norm(ing.name).includes(norm(f.name)))
-  return !have
+  const have = fridgeItems.value.some(
+    (f) =>
+      norm(f.name) === norm(ing.name) ||
+      norm(f.name).includes(norm(ing.name)) ||
+      norm(ing.name).includes(norm(f.name))
+  );
+  return !have;
 }
 
 function imageOf(d) {
-  const hit = dishList.value.find((x) => norm(x.name) === norm(d.name))
-  return hit ? hit.image || '' : ''
+  const hit = dishList.value.find((x) => norm(x.name) === norm(d.name));
+  return hit ? hit.image || '' : '';
 }
 
 async function loadBase() {
   const [fridge, all, cats, used] = await Promise.all([
-    listFridge(), listDishes(), listCategories(), getAiDailyCount()
-  ])
-  fridgeItems.value = fridge
-  dishList.value = all
-  categories.value = cats
-  fridgeCount.value = fridge.length
-  remaining.value = Math.max(0, AI_DAILY_LIMIT - used)
+    listFridge(),
+    listDishes(),
+    listCategories(),
+    getAiDailyCount()
+  ]);
+  fridgeItems.value = fridge;
+  dishList.value = all;
+  categories.value = cats;
+  fridgeCount.value = fridge.length;
+  remaining.value = Math.max(0, AI_DAILY_LIMIT - used);
 }
 
 /** 把 AI 推荐的菜整理成厨师大长串说明（用料 + 做法 + 说明） */
 function buildChefNote(d) {
-  const lines = []
+  const lines = [];
   if (d.ingredients && d.ingredients.length) {
-    lines.push('【用料】')
-    d.ingredients.forEach((ing) => lines.push(`- ${ing.name}${ing.amount ? ' ' + ing.amount : ''}`))
+    lines.push('【用料】');
+    d.ingredients.forEach((ing) =>
+      lines.push(`- ${ing.name}${ing.amount ? ' ' + ing.amount : ''}`)
+    );
   }
   if (d.steps && d.steps.length) {
-    lines.push('【做法】')
-    d.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`))
+    lines.push('【做法】');
+    d.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
   }
-  if (d.note) lines.push(`【说明】${d.note}`)
-  return lines.join('\n')
+  if (d.note) lines.push(`【说明】${d.note}`);
+  return lines.join('\n');
 }
 
 /** 确保这道菜在菜单里（存在则复用，不存在则创建），返回 { dish, existed } */
 async function ensureDishInMenu(d) {
-  const name = String(d.name || '').trim()
-  if (!name) throw new Error('菜名为空')
-  const exist = await findDishByName(name)
-  if (exist) return { dish: exist, existed: true }
-  const chefNote = buildChefNote(d)
+  const name = String(d.name || '').trim();
+  if (!name) throw new Error('菜名为空');
+  const exist = await findDishByName(name);
+  if (exist) return { dish: exist, existed: true };
+  const chefNote = buildChefNote(d);
   const res = await addDish({
     name,
     categoryId: classifyDish(name, categories.value),
@@ -136,122 +162,132 @@ async function ensureDishInMenu(d) {
     searchText: (name + ' ' + chefNote).slice(0, 2000),
     createTime: serverDate(),
     updateTime: serverDate()
-  })
-  return { dish: { _id: res._id, name }, existed: false }
+  });
+  return { dish: { _id: res._id, name }, existed: false };
 }
 
 async function addToMenu(d) {
   try {
-    const { existed } = await ensureDishInMenu(d)
-    if (!addedNames.value.includes(d.name)) addedNames.value.push(d.name)
-    uni.showToast({ title: existed ? '这道菜已在菜单里' : '已加入菜单', icon: existed ? 'none' : 'success' })
+    const { existed } = await ensureDishInMenu(d);
+    if (!addedNames.value.includes(d.name)) addedNames.value.push(d.name);
+    uni.showToast({
+      title: existed ? '这道菜已在菜单里' : '已加入菜单',
+      icon: existed ? 'none' : 'success'
+    });
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加入失败', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加入失败', icon: 'none' });
   }
 }
 
 async function addToOrder(d) {
   try {
-    const { dish } = await ensureDishInMenu(d)
-    await setOrderItem(dish._id, dish.name, 1, '')
-    appStore.refreshCounts()
-    uni.showToast({ title: '已加入点单', icon: 'success' })
+    const { dish } = await ensureDishInMenu(d);
+    await setOrderItem(dish._id, dish.name, 1, '');
+    appStore.refreshCounts();
+    uni.showToast({ title: '已加入点单', icon: 'success' });
   } catch (e) {
-    console.error(e)
-    uni.showToast({ title: '加入失败', icon: 'none' })
+    console.error(e);
+    uni.showToast({ title: '加入失败', icon: 'none' });
   }
 }
 
 async function recommend(isRefresh) {
   if (fridgeItems.value.length === 0) {
-    errorMsg.value = '冰箱里还没有食材，先去「冰箱」tab 加一些'
-    return
+    errorMsg.value = '冰箱里还没有食材，先去「冰箱」tab 加一些';
+    return;
   }
   if (remaining.value <= 0) {
-    errorMsg.value = `今日 AI 推荐次数已用完（${AI_DAILY_LIMIT}/${AI_DAILY_LIMIT}），明天再来`
-    return
+    errorMsg.value = `今日 AI 推荐次数已用完（${AI_DAILY_LIMIT}/${AI_DAILY_LIMIT}），明天再来`;
+    return;
   }
   if (isRefresh && dishes.value.length) {
-    const names = dishes.value.map((d) => d.name)
-    excludeNames.value = excludeNames.value.concat(names).slice(-60)
+    const names = dishes.value.map((d) => d.name);
+    excludeNames.value = excludeNames.value.concat(names).slice(-60);
   }
-  loading.value = true
-  errorMsg.value = ''
+  loading.value = true;
+  errorMsg.value = '';
   try {
     const res = await wx.cloud.callFunction({
       name: 'ai-chef',
       data: {
-        fridgeItems: fridgeItems.value.map((f) => ({ name: f.name, amount: f.amount, unit: f.unit })),
+        fridgeItems: fridgeItems.value.map((f) => ({
+          name: f.name,
+          amount: f.amount,
+          unit: f.unit
+        })),
         excludeNames: excludeNames.value
       }
-    })
-    const r = res.result || {}
+    });
+    const r = res.result || {};
     if (!r.ok) {
-      errorMsg.value = (r.message || 'AI 调用失败') + (r.detail ? '\n' + r.detail : '')
-      dishes.value = []
-      log('AI 推荐', '失败: ' + errorMsg.value, 'error')
-      return
+      errorMsg.value = (r.message || 'AI 调用失败') + (r.detail ? '\n' + r.detail : '');
+      dishes.value = [];
+      log('AI 推荐', '失败: ' + errorMsg.value, 'error');
+      return;
     }
-    dishes.value = (r.dishes || []).slice(0, 10)
-    await incAiDailyCount()
-    remaining.value = Math.max(0, remaining.value - 1)
-    log('AI 推荐', `${fridgeItems.value.length} 种食材 → ${dishes.value.length} 道菜${isRefresh ? '（换一批）' : ''}`)
+    dishes.value = (r.dishes || []).slice(0, 10);
+    await incAiDailyCount();
+    remaining.value = Math.max(0, remaining.value - 1);
+    log(
+      'AI 推荐',
+      `${fridgeItems.value.length} 种食材 → ${dishes.value.length} 道菜${isRefresh ? '（换一批）' : ''}`
+    );
   } catch (e) {
-    console.error(e)
-    errorMsg.value = '调用失败：请确认 ai-chef 云函数已部署\n' + (e.message || '')
-    log('AI 推荐', '异常: ' + (e.message || e), 'error')
+    console.error(e);
+    errorMsg.value = '调用失败：请确认 ai-chef 云函数已部署\n' + (e.message || '');
+    log('AI 推荐', '异常: ' + (e.message || e), 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function dishText(d) {
-  const lines = []
-  lines.push(d.name)
-  lines.push('【用料】')
-  ;(d.ingredients || []).forEach((ing) => {
-    const miss = isMissing(d, ing)
-    lines.push(`- ${ing.name}${ing.amount ? ' ' + ing.amount : ''}${miss ? '（缺）' : ''}`)
-  })
+  const lines = [];
+  lines.push(d.name);
+  lines.push('【用料】');
+  (d.ingredients || []).forEach((ing) => {
+    const miss = isMissing(d, ing);
+    lines.push(`- ${ing.name}${ing.amount ? ' ' + ing.amount : ''}${miss ? '（缺）' : ''}`);
+  });
   if (d.steps && d.steps.length) {
-    lines.push('【做法】')
-    d.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`))
+    lines.push('【做法】');
+    d.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
   }
-  if (d.note) lines.push(`【备注】${d.note}`)
-  return lines.join('\n')
+  if (d.note) lines.push(`【备注】${d.note}`);
+  return lines.join('\n');
 }
 
 function copyDish(d) {
-  uni.setClipboardData({ data: dishText(d) })
+  uni.setClipboardData({ data: dishText(d) });
 }
 
 function copyMissingAll() {
-  const set = []
+  const set = [];
   dishes.value.forEach((d) => {
-    ;(d.ingredients || []).forEach((ing) => {
-      if (isMissing(d, ing) && !set.includes(ing.name)) set.push(ing.name)
-    })
-  })
+    (d.ingredients || []).forEach((ing) => {
+      if (isMissing(d, ing) && !set.includes(ing.name)) set.push(ing.name);
+    });
+  });
   const text = set.length
     ? `缺料清单（共 ${set.length} 种）：\n${set.map((n) => '- ' + n).join('\n')}`
-    : '什么都不缺，冰箱食材够做这些菜 🎉'
-  uni.setClipboardData({ data: text })
+    : '什么都不缺，冰箱食材够做这些菜 🎉';
+  uni.setClipboardData({ data: text });
 }
 
 function copyAll() {
-  uni.setClipboardData({ data: dishes.value.map(dishText).join('\n\n----------\n\n') })
+  uni.setClipboardData({ data: dishes.value.map(dishText).join('\n\n----------\n\n') });
 }
 
 onLoad(async () => {
   try {
-    await loadBase()
-    await recommend(false)
+    await loadBase();
+    await recommend(false);
   } catch (e) {
-    console.error(e)
-    errorMsg.value = '加载失败，请确认云开发已开通'
+    console.error(e);
+    errorMsg.value = '加载失败，请确认云开发已开通';
   }
-})
+});
 </script>
 
 <style>

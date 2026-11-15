@@ -4,7 +4,9 @@
     <view class="group-card">
       <template v-if="groupInfo">
         <view class="group-name">🏠 {{ groupInfo.name }}</view>
-        <view class="group-meta">组内 {{ memberCount }} 人 · 邀请码：{{ groupInfo.inviteCode }}</view>
+        <view class="group-meta"
+          >组内 {{ memberCount }} 人 · 邀请码：{{ groupInfo.inviteCode }}</view
+        >
         <view class="group-actions">
           <view class="group-btn" @tap="copyInvite">复制邀请码</view>
           <view class="group-btn leave" @tap="leave">退出家庭</view>
@@ -12,7 +14,9 @@
       </template>
       <template v-else>
         <view class="group-name">还没有加入家庭</view>
-        <view class="group-desc">创建家庭：生成邀请码，历史数据自动归入新组\n加入：输入家人给你的邀请码</view>
+        <view class="group-desc"
+          >创建家庭：生成邀请码，历史数据自动归入新组\n加入：输入家人给你的邀请码</view
+        >
         <view class="group-actions">
           <view class="group-btn primary" @tap="create">创建家庭</view>
           <view class="group-btn" @tap="join">输入邀请码加入</view>
@@ -26,7 +30,9 @@
         <text class="role-value">{{ roleName }}</text>
       </view>
       <view class="role-switch" @tap="switchRole">切换身份</view>
-      <view class="role-desc">客户：点单、加菜（只需菜名+备注）\n厨师：写做法用料、看订单、补全菜品（每组可多位厨师）</view>
+      <view class="role-desc"
+        >客户：点单、加菜（只需菜名+备注）\n厨师：写做法用料、看订单、补全菜品（每组可多位厨师）</view
+      >
     </view>
 
     <view class="menu">
@@ -57,29 +63,35 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import { ROLE, ROLE_NAMES } from '../../utils/constants'
-import { createGroup, joinGroup, leaveGroup, getGroupInfo, countGroupMembers } from '../../utils/api'
-import { getOpenid } from '../../utils/cloud'
-import { useAppStore } from '../../store/app'
+import { ref, computed } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
+import { ROLE, ROLE_NAMES } from '../../utils/constants';
+import {
+  createGroup,
+  joinGroup,
+  leaveGroup,
+  getGroupInfo,
+  countGroupMembers
+} from '../../utils/api';
+import { getOpenid } from '../../utils/cloud';
+import { useAppStore } from '../../store/app';
 
-const appStore = useAppStore()
-const groupInfo = ref(null)
-const memberCount = ref(0)
-const openidTail = ref('')
+const appStore = useAppStore();
+const groupInfo = ref(null);
+const memberCount = ref(0);
+const openidTail = ref('');
 
-const roleName = computed(() => ROLE_NAMES[appStore.role] || '未设置')
+const roleName = computed(() => ROLE_NAMES[appStore.role] || '未设置');
 
 async function load() {
-  if (!appStore.roleLoaded) await appStore.loadRole()
-  groupInfo.value = await getGroupInfo()
-  memberCount.value = await countGroupMembers()
+  if (!appStore.roleLoaded) await appStore.loadRole();
+  groupInfo.value = await getGroupInfo();
+  memberCount.value = await countGroupMembers();
   try {
-    const oid = await getOpenid()
-    openidTail.value = oid ? oid.slice(-6) : ''
+    const oid = await getOpenid();
+    openidTail.value = oid ? oid.slice(-6) : '';
   } catch (e) {
-    openidTail.value = ''
+    openidTail.value = '';
   }
 }
 
@@ -87,7 +99,7 @@ function pickRole(cb) {
   uni.showActionSheet({
     itemList: ['我是厨师（做菜）', '我是客户（点单）'],
     success: (res) => cb(res.tapIndex === 0 ? ROLE.CHEF : ROLE.CUSTOMER)
-  })
+  });
 }
 
 function create() {
@@ -96,25 +108,25 @@ function create() {
     editable: true,
     placeholderText: '家庭名称（如：我们家）',
     success: (res) => {
-      if (!res.confirm) return
-      const name = (res.content || '').trim() || '我的家庭'
+      if (!res.confirm) return;
+      const name = (res.content || '').trim() || '我的家庭';
       pickRole(async (role) => {
         try {
-          const g = await createGroup(name, role)
-          await appStore.loadRole()
-          await load()
+          const g = await createGroup(name, role);
+          await appStore.loadRole();
+          await load();
           uni.showModal({
             title: '创建成功',
             content: `家庭：${g.name}\n邀请码：${g.inviteCode}\n\n把这个码告诉家人，他们在「我的」页输入即可加入`,
             showCancel: false
-          })
+          });
         } catch (e) {
-          console.error(e)
-          uni.showToast({ title: (e && e.message) || '创建失败', icon: 'none' })
+          console.error(e);
+          uni.showToast({ title: (e && e.message) || '创建失败', icon: 'none' });
         }
-      })
+      });
     }
-  })
+  });
 }
 
 function join() {
@@ -123,32 +135,32 @@ function join() {
     editable: true,
     placeholderText: '输入 6 位邀请码',
     success: (res) => {
-      if (!res.confirm) return
-      const code = (res.content || '').trim()
+      if (!res.confirm) return;
+      const code = (res.content || '').trim();
       if (!code) {
-        uni.showToast({ title: '请输入邀请码', icon: 'none' })
-        return
+        uni.showToast({ title: '请输入邀请码', icon: 'none' });
+        return;
       }
       pickRole(async (role) => {
         try {
-          const g = await joinGroup(code, role)
-          await appStore.loadRole()
-          await load()
-          uni.showToast({ title: '已加入：' + g.name, icon: 'success' })
+          const g = await joinGroup(code, role);
+          await appStore.loadRole();
+          await load();
+          uni.showToast({ title: '已加入：' + g.name, icon: 'success' });
         } catch (e) {
-          console.error(e)
-          uni.showToast({ title: (e && e.message) || '加入失败', icon: 'none' })
+          console.error(e);
+          uni.showToast({ title: (e && e.message) || '加入失败', icon: 'none' });
         }
-      })
+      });
     }
-  })
+  });
 }
 
 function copyInvite() {
-  if (!groupInfo.value) return
+  if (!groupInfo.value) return;
   uni.setClipboardData({
     data: `我在「${groupInfo.value.name}」的家庭菜谱等你：打开小程序 → 我的 → 输入邀请码加入：${groupInfo.value.inviteCode}`
-  })
+  });
 }
 
 function leave() {
@@ -157,42 +169,42 @@ function leave() {
     content: '退出后看不到本组的菜单、订单和冰箱数据（数据保留在原组）。确定退出？',
     confirmColor: '#fa5151',
     success: async (res) => {
-      if (!res.confirm) return
+      if (!res.confirm) return;
       try {
-        await leaveGroup()
-        await appStore.loadRole()
-        await load()
-        uni.showToast({ title: '已退出家庭', icon: 'none' })
+        await leaveGroup();
+        await appStore.loadRole();
+        await load();
+        uni.showToast({ title: '已退出家庭', icon: 'none' });
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '操作失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '操作失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 function switchRole() {
   uni.showActionSheet({
     itemList: ['客户（点单的人）', '厨师（做菜的人）'],
     success: async (res) => {
-      const role = res.tapIndex === 0 ? ROLE.CUSTOMER : ROLE.CHEF
+      const role = res.tapIndex === 0 ? ROLE.CUSTOMER : ROLE.CHEF;
       try {
-        await appStore.chooseRole(role)
-        appStore.refreshCounts()
-        uni.showToast({ title: '已切换为：' + ROLE_NAMES[role], icon: 'none' })
+        await appStore.chooseRole(role);
+        appStore.refreshCounts();
+        uni.showToast({ title: '已切换为：' + ROLE_NAMES[role], icon: 'none' });
       } catch (e) {
-        console.error(e)
-        uni.showToast({ title: '切换失败', icon: 'none' })
+        console.error(e);
+        uni.showToast({ title: '切换失败', icon: 'none' });
       }
     }
-  })
+  });
 }
 
 function go(url) {
-  uni.navigateTo({ url })
+  uni.navigateTo({ url });
 }
 
-onShow(load)
+onShow(load);
 </script>
 
 <style>
